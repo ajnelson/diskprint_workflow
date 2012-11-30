@@ -1,0 +1,5 @@
+[root]
+DBserverIP=172.16.123.231
+DBname=diskprints
+DBusername=diskprint_writer
+DBpasswordfile=/Users/me/psql_diskprint_writer_password.txt
