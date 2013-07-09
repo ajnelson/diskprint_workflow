@@ -1,0 +1,1 @@
+This software was partially developed by a researcher and contractor to the National Institute of Standards and Technology. NIST assumes no responsibility whatsoever for its use by other parties, and makes no guarantees, expressed or implied, about its quality, reliability, or any other characteristic. We would appreciate acknowledgement if the software is used.

@@ -45,11 +45,10 @@ bash_pid=$$
 script_name=$(basename "$0")
 tarball_name=$(basename "$1")
 diskprint_name=${tarball_name/%.tar.gz/}
-tmp_dir=/tmp/${script_name}.$bash_pid
 e01_path="$2"
-e01_dir=$(dirname "$e01_path")
-iso_path=${e01_path/%.E01/.iso}
-tarball_extract_dir=$e01_dir/vmware_dump
+e01_dir="$(dirname "$e01_path")"
+iso_path="${e01_path/%.E01/.iso}"
+tarball_extract_dir="$e01_dir/vmware_dump"
 
 #Some debug prints
 echo "Debug: tarball_name: $tarball_name" >&2
@@ -75,7 +74,7 @@ fi
 echo "Done."
 
 #Convert vmdk file
-vmdk_path=$(find "$tarball_extract_dir" -name '*.vmdk' -print | head -n1)
+vmdk_path="$(find "$tarball_extract_dir" -name '*.vmdk' -print | head -n1)"
 if [ "$vmdk_path" == "" ]; then
   echo "Error: .vmdk file not found in tarball!" >&2
   exit 1

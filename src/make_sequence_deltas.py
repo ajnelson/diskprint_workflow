@@ -1,4 +1,4 @@
-#!/opt/local/bin/python3.2
+#!/opt/local/bin/python3.3
 
 """
 make_sequence_deltas.py: Aggregate differences in ouput of Fiwalk and RegXML Extractor.
@@ -32,19 +32,29 @@ def time_string_from_cell(cell):
 
 def etid_from_tarball_path(path, part):
     """
-    Quick 'n' dirty.  This probably deserves a database query instead.
+    Quick 'n' dirty.  This definitely deserves a database query instead.
     #TODO
     """
     bn = os.path.basename(path)
     parts = bn.split(".")[0].split("-")
-    assert len(parts) == 3
+    assert len(parts) == 5
     return parts[part]
 
 def appetid_from_tarball_path(path):
-    return etid_from_tarball_path(path, 1)
+    return etid_from_tarball_path(path, 2) + "-" + etid_from_tarball_path(path, 3)
 
 def osetid_from_tarball_path(path):
-    return etid_from_tarball_path(path, 0)
+    return etid_from_tarball_path(path, 0) + "-" + etid_from_tarball_path(path, 1)
+
+def sliceid_from_regxml_path(path):
+    """
+    This is also a piece of fragile code.
+    """
+    assert path[0] == "/"  #Requires absolute path
+    path_parts = path.split("/")
+    tarball_basename = path_parts[-3]
+    sliceid = int(tarball_basename.split(".")[0].split("-")[4])
+    return sliceid
 
 def main():
     global args
@@ -60,7 +70,8 @@ def main():
     import rx_make_database
 
     #Set up database
-    #Table structure should be consistent with /code/2.0/diskprints/database/schema.sql
+
+    #Table structure should be consistent with the diskprint_database repository's 00_load_diskprintdb.sql
     outconn = sqlite3.connect("registry_deltas.db")
     outcur = outconn.cursor()
     outcur.execute("""
@@ -73,6 +84,9 @@ def main():
     """)
     outcur.execute("""
         CREATE TABLE IF NOT EXISTS regdelta (
+          appetid TEXT,
+          osetid TEXT,
+          sliceid NUMBER,
           hiveid NUMBER,
           cellpath TEXT,
           cellaction NUMBER,
@@ -185,6 +199,9 @@ def main():
                         old_parent_cell = s.cnames.get(parent_path)
                         old_parent_mtime = time_string_from_cell(old_parent_cell)
                     regdelta_record = {
+                      "osetid": hiveid_record["osetid"],
+                      "appetid": hiveid_record["appetid"],
+                      "sliceid": sliceid_from_regxml_path(regxml_file),
                       "hiveid": local_hiveid_counter,
                       "cellpath": cell.full_path(),
                       "cellaction": "created",
@@ -211,6 +228,9 @@ def main():
                         new_parent_cell = s.new_cnames.get(parent_path)
                         new_parent_mtime = time_string_from_cell(new_parent_cell)
                     regdelta_record = {
+                      "osetid": hiveid_record["osetid"],
+                      "appetid": hiveid_record["appetid"],
+                      "sliceid": sliceid_from_regxml_path(regxml_file),
                       "hiveid": local_hiveid_counter,
                       "cellpath": ocell.full_path(),
                       "cellaction": "removed",
@@ -237,6 +257,9 @@ def main():
                     if cell.full_path() in changed_properties_noted:
                       continue
                     regdelta_record = {
+                      "osetid": hiveid_record["osetid"],
+                      "appetid": hiveid_record["appetid"],
+                      "sliceid": sliceid_from_regxml_path(regxml_file),
                       "hiveid": local_hiveid_counter,
                       "cellpath": cell.full_path(),
                       "cellaction": "property updated",

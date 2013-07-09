@@ -1,8 +1,36 @@
-# Forensic differencing workflow
+# Diskprint differencing workflow
+
+
+## Initial setup
+
+Before your first run, you will need to run these commands to guarantee your environment will support the differencing workflow:
+
+    ./git_submodule_init.sh
+    deps/augment_shell.sh ; source ~/.bashrc
+    sudo deps/install_dependent_packages_(your supported OS here)
+    ./bootstrap.sh
+
+If `bootstrap.sh` fails, it should provide you sufficient instructions to fix things up so you can run it to completion.  If bootstrap worked, running it again will cause no changes.
+
+To check to see if the execution environment's setup alright (without checking for the database being live), run this script:
+
+    tests/check_env.sh
+
+
+### Setting up the database
+
+The database tables are managed in a separate repository, `diskprint_database`.
+
+The `src/differ.cfg.sample` file in the workflow repository (not the database repository) contains configuration information necessary to connect to the database.  Copy it to `src/differ.cfg` and modify it to fit your environment.
+
+Check that the database is queryable with this script:
+
+    tests/check_db.sh
+
 
 ## Running
 
-The workflow runs by invoking the script and passing the path to the last diskprint tarball, and the root directory of where your results will be planted.  For instance, the following commands:
+The workflow runs by invoking the script and passing the path to the last diskprint tarball of your sequence, and the root directory of where your results will be planted.  For instance, the following commands:
 
     cd src/
     ./do_difference_workflow.sh /Volumes/DiskPrintStore/8504-1/7895-1/8504-1-7895-1-40.tar.gz results
@@ -13,44 +41,42 @@ Will create these directories:
 * `src/results/Volumes/DiskPrintStore/8504-1/7895-1/8504-1-7895-1-30.tar.gz/`...
 * `src/results/Volumes/DiskPrintStore/8504-1/7895-1/8504-1-7895-1-40.tar.gz/`...
 
-That example assumes the sequence begins at 10 and ends at 40; the actual sequence is defined in the database and read by make_sequence_list.sh.
+That example assumes the sequence begins at 10; the actual sequence is defined in the database and read by `make_sequence_list.sh`.
 
-The differ.cfg file contains configuration information necessary for the database.
+An easier approach to running the workflow is telling it to run on all available data; to do this, pass the flag "--parallel-all" instead of a tarball path.
+
+This workflow is idempotent on success:  If everything worked, running it again will cause nothing to happen.
+
+
+### Halting
 
 The workflow script can be safely killed with just a ctrl-c.  If anything does not complete, the error log will tell you what you need to do to resume the work.  Alternatively, simply running the script again will tell you what you need to do to resume the work.  Usually you will need to just delete a partially-completed output directory.
 
 You know it all worked when the last line of output is:
-Done.
 
-### Running as not-Alex
+    Done.
 
-Alex ran this script with some home-locally installed code, instead of `sudo make install'ing everything.  The easiest way to run things is to just `su ajnelson' and run `source ~ajnelson/.bash_profile'.  The $PATH environment variable should be long after you do this.  (Ultimately, there should be a sudo make install or a dedicated differencing account.)
-
-He had these necessary path updates in his .bashrc and .bash_profile:
-
-    export PYTHONPATH="$HOME/local/src/regxml_extractor/lib:$PYTHONPATH"
-    export PATH="$HOME/local/bin:/opt/local/bin:$PATH"
-    export LIBRARY_PATH="/opt/local/lib:$LIBRARY_PATH"
-    export LD_LIBRARY_PATH="/opt/local/lib:$LD_LIBRARYPATH"
-    export C_INCLUDE_PATH="/opt/local/include:$C_INCLUDE_PATH"
-    export CPLUS_INCLUDE_PATH="/opt/local/include:$CPLUS_INCLUDE_PATH"
-
-If you do not want to compile and sudo-install the code, he doesn't have definite plans on returning, so you could just link against his home directory:
-
-    export PYTHONPATH="/Users/ajnelson/local/src/regxml_extractor/lib:$PYTHONPATH"
-    export PATH="/Users/ajnelson/local/bin:/opt/local/bin:$PATH"
-    export LIBRARY_PATH="/opt/local/lib:$LIBRARY_PATH"
-    export LD_LIBRARY_PATH="/opt/local/lib:$LD_LIBRARYPATH"
-    export C_INCLUDE_PATH="/opt/local/include:$C_INCLUDE_PATH"
-    export CPLUS_INCLUDE_PATH="/opt/local/include:$CPLUS_INCLUDE_PATH"
-
-(This is currently the preferable solution for getting dfxml and fiwalk into the Python path.)
-
-To export to the database, there is a configuration field DBpasswordfile, that should point to a file the executing user can read, and just has the database password.  Tweak src/differ.cfg, or supply your own config file with this field (note that other config files don't define the DBpasswordfile field).
 
 ## Data generated
 
-If you want to blow away the data, do these three steps:
-* Kill all the running instances of do_difference_workflow.sh
-* Blow away the output root.
-* Delete all contents from the vmslice database's hive and regdelta tables.
+If you want to erase all the derived data, do these three steps:
+* Kill all the running instances of `do_difference_workflow.sh`
+* Delete the output root (`results` in the above example).
+* Delete all contents from the database's `regdelta` and `hive` tables.
+
+
+### Updating data
+
+In the event some data are found to have been erroneously ingested into the database, the data should be re-ingested.  Fortunately, this does not mean regenerating all of the data.
+
+First, the cleanest approach to ensuring difference data are up-to-date is refreshing the two data tables.  In the Postgres service, `diskprints` database:
+
+    DELETE FROM diskprint.regdelta;
+    DELETE FROM diskprint.hive;
+
+Running the workflow again with the `--re-export` flag will run only the export step.
+
+
+## Debugging
+
+Each script of the workflow records its stdout, stderr, and exit status (...`.sh.{out,err,status}.log`).  These logs should be supplied with debugging support requests.

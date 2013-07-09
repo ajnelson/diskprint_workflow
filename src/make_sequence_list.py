@@ -1,15 +1,15 @@
-#!/usr/bin/python2.6
+#!/opt/local/bin/python2.7
 """
 Produces a sequence list ending at the given disk slice.
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.4"
 
 import os, sys
 import argparse
 import logging
-from ConfigParser import ConfigParser
-import psycopg2, psycopg2.extras
+
+import differ_library
 
 def main():
     global args
@@ -24,27 +24,16 @@ def main():
       level=loglvl
     )
 
-    config = ConfigParser()
-    config.optionxform = str #Without this, config options are case insensitive and the parser pukes on ".exe=something" and ".EXE=somethingelse"
-    config.read(args.config)
-    configrootdict = dict()
-    for (n,v) in config.items("root"):
-        configrootdict[n]=v
-    pwfilepath = configrootdict.get("DBpasswordfile")
-    if os.path.isfile(pwfilepath):
-        configrootdict["DBpassword"] = open(pwfilepath, "r").read().strip()
-
-    conn_string = "host='%(DBserverIP)s' dbname='%(DBname)s' user='%(DBusername)s' password='%(DBpassword)s'" % configrootdict
-    #logging.debug("conn_string: \"%s\"." % conn_string)
-    conn = psycopg2.connect(conn_string)
-    conn.autocommit = True
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    (conn, cursor) = differ_library.db_conn_from_config_path(args.config)
 
     cursor.execute("""
         SELECT
-          slice.sliceid, storage.location
+          slice.sliceid,
+          slice.osetid,
+          slice.appetid,
+          storage.location
         FROM
-          storage, slice
+          diskprint.storage AS storage, diskprint.slice AS slice
         WHERE
           slice.slicehash = storage.slicehash AND
           location = %s;
@@ -53,6 +42,8 @@ def main():
     if len(returned_rows) != 1:
         raise Exception("Error: unexpected data: Expected only one sliceid to match '%s', got %d." % (args.slice_path, len(returned_rows)))
     slice_id = returned_rows[0]["sliceid"]
+    osetid = returned_rows[0]["osetid"]
+    appetid = returned_rows[0]["appetid"]
 
     #Build chain of slice_id's
     ids_reversed = [slice_id]
@@ -62,15 +53,17 @@ def main():
             SELECT
               slicepredecessorid
             FROM
-              slice
+              diskprint.slice AS slice
             WHERE
+              osetid = %s AND
+              appetid = %s AND
               sliceid = %s;
-        """, (earliest_id,))
+        """, (osetid, appetid, earliest_id))
         returned_rows = [row for row in cursor]
         if len(returned_rows) == 0:
             raise Exception("Missing data: sliceid %d's parent not present in slice table." % earliest_id)
         elif len(returned_rows) > 1:
-            raise Exception("Ambiguous history: A disk slice can't have two immediately preceding slices.")
+            raise Exception("Ambiguous history: A disk slice can't have two immediately preceding slices.\n\tsliceid: %r." % earliest_id)
 
         earliest_id = returned_rows[0]["slicepredecessorid"]
         if earliest_id is None:
@@ -92,11 +85,13 @@ def main():
         SELECT
           slice.sliceid, storage.location
         FROM
-          storage, slice
+          diskprint.storage AS storage, diskprint.slice AS slice
         WHERE
           slice.slicehash = storage.slicehash AND
+          slice.osetid = %s AND
+          slice.appetid = %s AND
           sliceid in %s;
-    """, (tuple(ids),) )
+    """, (osetid, appetid, tuple(ids)) )
 
     #Build map of slice id to file system path
     id_to_path = dict()

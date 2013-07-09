@@ -1,5 +1,9 @@
 [root]
 DBserverIP=172.16.123.231
 DBname=diskprints
+
+#This database user account needs to have INSERT permissions in diskprint.regdelta and diskprint.hive, and SELECT permissions for diskprint.*.
 DBusername=diskprint_writer
+
+#This file should have restrictive file system permissions, much like ~/.ssh or ~/.subversion.
 DBpasswordfile=/Users/me/psql_diskprint_writer_password.txt
