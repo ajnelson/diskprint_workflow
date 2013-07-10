@@ -74,7 +74,8 @@ fi
 echo "Done."
 
 #Convert vmdk file
-vmdk_path="$(find "$tarball_extract_dir" -name '*.vmdk' -print | head -n1)"
+#Ignore resource fork files (._*)
+vmdk_path="$(find "$tarball_extract_dir" -name '*.vmdk' -print | egrep -v '\/\._[^\/]+\.vmdk' | head -n1)"
 if [ "$vmdk_path" == "" ]; then
   echo "Error: .vmdk file not found in tarball!" >&2
   exit 1
