@@ -1,5 +1,14 @@
 # Diskprint differencing workflow
 
+This repository contains program configurations and calls used to process diskprints.  An overview of the diskprint project is available from [NIST](http://www.nsrl.nist.gov/Diskprints.htm).
+
+NB: The workflow in this repository is meant to be run by a dedicated shell user account in a Mac OS X environment.  The account's Bash environment must be configured to allow for local compilation and installation by augmentations to various `$PATH` variables.  If not already configured, a script is included to complete configuration.
+
+
+## Data
+
+This workflow operates on tarballs of virtual machines generated with VMWare Fusion.  (VMWare Workstation appears to generate data in a sufficiently similar format, but has not been tested.)  A diskprint is effectively a sequence of tarballs of a single virtual machine.  At times of interest in the machine usage, the machine is paused and archived with `tar`.  Virtual machine snapshots are not currently used.  The tarballs are then annotated and stored.  Storage references and the metadata are loaded into a Postgres database; example SQL statements that illustrate the annotations are in the `examples/` directory of the [Diskprint database](https://github.com/ajnelson/diskprint_database).
+
 
 ## Initial setup
 
@@ -81,12 +90,12 @@ Running the workflow again with the `--re-export` flag will run only the export 
 
 ## Debugging
 
-Each script of the workflow records its stdout, stderr, and exit status (...`.sh.{out,err,status}.log`).  These logs should be supplied with debugging support requests.
+Each script of the workflow records its stdout, stderr, and exit status (...`.sh.{out,err,status}.log`).  It would be helpful to have these logs with debugging support requests.
 
 
 ## Developing
 
-Contributions are welcomed!
+Contributions are welcome!  To help understand this repository's development, these are the main Git branches:
 
 * The `master` branch is operational code used to generate results.
 * The `unstable` branch is development code, and is not guaranteed to work.
