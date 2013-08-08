@@ -10,6 +10,8 @@ Before your first run, you will need to run these commands to guarantee your env
     sudo deps/install_dependent_packages_(your supported OS here)
     ./bootstrap.sh
 
+Note only one command needs to be run with `sudo`.  Everything else that requires compilation and installation is installed into your home directory (under `~/local`).
+
 If `bootstrap.sh` fails, it should provide you sufficient instructions to fix things up so you can run it to completion.  If bootstrap worked, running it again will cause no changes.
 
 To check to see if the execution environment's setup alright (without checking for the database being live), run this script:
@@ -19,7 +21,7 @@ To check to see if the execution environment's setup alright (without checking f
 
 ### Setting up the database
 
-The database tables are managed in a separate repository, `diskprint_database`.
+The database tables are managed in a separate repository, [`diskprint_database`](https://github.com/ajnelson/diskprint_database).
 
 The `src/differ.cfg.sample` file in the workflow repository (not the database repository) contains configuration information necessary to connect to the database.  Copy it to `src/differ.cfg` and modify it to fit your environment.
 
@@ -43,16 +45,16 @@ Will create these directories:
 
 That example assumes the sequence begins at 10; the actual sequence is defined in the database and read by `make_sequence_list.sh`.
 
-An easier approach to running the workflow is telling it to run on all available data; to do this, pass the flag "--parallel-all" instead of a tarball path.
+An easier approach to running the workflow is telling it to run on all available data; to do this, pass the flag "`--parallel-all`" instead of a tarball path.
 
 This workflow is idempotent on success:  If everything worked, running it again will cause nothing to happen.
 
 
 ### Halting
 
-The workflow script can be safely killed with just a ctrl-c.  If anything does not complete, the error log will tell you what you need to do to resume the work.  Alternatively, simply running the script again will tell you what you need to do to resume the work.  Usually you will need to just delete a partially-completed output directory.
+The workflow script can be safely killed with just a ctrl-c.  If anything does not complete, the error log will tell you what you need to do to resume the work.  Alternatively, simply running the script again will tell you what you need to do to resume the work, and even will offer to do erroneous result cleanup (see the `--cleanup` option).
 
-You know it all worked when the last line of output is:
+You will know it all worked when the last line of output is:
 
     Done.
 
@@ -80,3 +82,14 @@ Running the workflow again with the `--re-export` flag will run only the export 
 ## Debugging
 
 Each script of the workflow records its stdout, stderr, and exit status (...`.sh.{out,err,status}.log`).  These logs should be supplied with debugging support requests.
+
+
+## Developing
+
+Contributions are welcomed!
+
+* The `master` branch is operational code used to generate results.
+* The `unstable` branch is development code, and is not guaranteed to work.
+* The `staging` branch is code being tested for merging into the `master` branch.  `staging`  might not have a stable Git history (be reset to other versions of commits), in the interest of keeping `master`'s history fairly linear and comprehensible.
+
+Contributions can safely target the `master` branch; `unstable` may live up to its name and thus be a bad partner-development target.  Pull requests will undergo review and testing before merging.
