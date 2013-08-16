@@ -15,8 +15,8 @@ This workflow operates on tarballs of virtual machines generated with VMWare Fus
 Before your first run, you will need to run these commands to guarantee your environment will support the differencing workflow:
 
     ./git_submodule_init.sh
-    deps/augment_shell.sh ; source ~/.bashrc
     sudo deps/install_dependent_packages_(your supported OS here)
+    deps/augment_shell.sh ; source ~/.bashrc
     ./bootstrap.sh
 
 Note only one command needs to be run with `sudo`.  Everything else that requires compilation and installation is installed into your home directory (under `~/local`).
