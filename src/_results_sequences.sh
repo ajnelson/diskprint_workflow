@@ -1,11 +1,26 @@
 #!/bin/bash
 
-#This script expects the variables dwf_tarball_results_dirs_sequence_file and dwf_output_dir.
+#This script expects these variables:
+# * dwf_tarball_results_dirs_sequence_file
+# * dwf_output_dir
+# * dwf_all_results_root
 #This script relaxes some sanity checks if the variable TESTING_RESULTS_SEQUENCES == 'yes'.
 #See "#Definitions" to get the list of variables this module produces.
 
 #Sanity check variable
 INSANE_DIR_COUNT=50
+
+if [ "x$dwf_all_results_root" == "x" ]; then
+  echo "Error: _results_sequences.sh: need the variable '\$dwf_all_results_root' to be defined." >&2
+  exit 1
+fi
+
+if [ ! -d "$dwf_all_results_root" ]; then
+  if [ "x$TESTING_RESULTS_SEQUENCES" != "xyes" ]; then
+    echo "Error: _results_sequences.sh: '\$dwf_all_results_root' ('$dwf_all_results_root') is not a directory." >&2
+    exit 1
+  fi
+fi
 
 if [ "x$dwf_output_dir" == "x" ]; then
   echo "Error: _results_sequences.sh: need the variable '\$dwf_output_dir' to be defined." >&2
@@ -45,7 +60,7 @@ while read x; do
       exit 1
     fi
   fi
-  dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index]="$x"
+  dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index]="${dwf_all_results_root}$x"
 
   #Track the current index
   #Pattern-matching syntax ref: http://www.cyberciti.biz/faq/bash-find-out-if-variable-contains-substring/

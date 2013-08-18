@@ -142,6 +142,7 @@ if [ ! -r "$DIFFER_CONFIG" ]; then
   echo "Error: $script_basename: config file not readable: $DIFFER_CONFIG" >&2
   exit 1
 fi
+export dwf_all_results_root="$results_root_path"
 export DIFFER_CONFIG="$(my_readlink $DIFFER_CONFIG)"
 #echo "Debug: $script_basename: \$DIFFER_CONFIG = $DIFFER_CONFIG" >&2
 
@@ -405,6 +406,15 @@ if [ $any_errors -gt 0 ]; then
   echo "Note: Encountered $any_errors errors in the Fiwalk loop.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   exit 1
 fi
+
+#Create differential DFXML output directories after all Fiwalk output is successfully done
+while read sequence_image; do
+  echo "Note: Starting differential DFXML processing for \"$sequence_image\"." >&2
+  logandrunscript "$sequence_image" "$script_dirname/make_differential_dfxml.sh"
+done<"$sequence_file"
+any_errors=$(count_script_errors "make_differential_dfxml.sh")
+
+#Tolerate errors with differential DFXML processing for now.
 
 #Create RE output directories after all E01 output's successfully done.
 #(Creating per-image RE immediately after creating the E01 (and similarly with Fiwalk) means basically trying to integrate Make again: Suddenly, there's a piecemeal, per-tarball dependency graph that has to be defined. A Bash array could probably do it, but recovering from failure becomes tedious right-quick.)
