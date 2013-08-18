@@ -30,7 +30,7 @@ if [ ! -r "$dwf_tarball_results_dirs_sequence_file" ]; then
 fi
 
 #Definitions
-#Note that the _next index is kept at this sentinel value if there is no next image in the sequence.
+#Note that the _previous and _next indces are kept at this sentinel value if there is no previous or next image in the sequence.
 declare -a dwf_tarball_results_dirs
 dwf_tarball_results_dirs_index=0
 dwf_tarball_results_dirs_index_end=-1
@@ -67,9 +67,6 @@ done <$dwf_tarball_results_dirs_sequence_file
 
 if [ $dwf_tarball_results_dirs_index_current -ge 0 ]; then
   dwf_tarball_results_dirs_index_previous=$(expr $dwf_tarball_results_dirs_index_current - 1);
-  if [ $dwf_tarball_results_dirs_index_previous -lt 0 ]; then
-    dwf_tarball_results_dirs_index_previous=0
-  fi
 
   dwf_tarball_results_dirs_index_next=$(expr $dwf_tarball_results_dirs_index_current + 1);
   if [ $dwf_tarball_results_dirs_index_next -gt $dwf_tarball_results_dirs_index_end ]; then
