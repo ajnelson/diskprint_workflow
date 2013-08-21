@@ -5,7 +5,7 @@
 AFFLIB_REPO=https://github.com/simsong/AFFLIBv3.git
 AFFLIB_COMMIT=b0a36e392c26e4d9e95a85a41071d794d4b9ee73
 DFXML_REPO=https://github.com/ajnelson/dfxml.git
-DFXML_COMMIT=0aae117442333ae8ff0f4ca1003481bfcb29a970
+DFXML_COMMIT=25bd4e0d09fb8d8657172aa1df4ece987db03c31
 RE_REPO=https://github.com/ajnelson/regxml_extractor.git
 RE_COMMIT=391ab930d2f611d60b6a069416bf40b10ad61746
 
