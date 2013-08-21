@@ -54,13 +54,15 @@ dwf_tarball_results_dirs_index_previous=-1
 dwf_tarball_results_dirs_index_next=-1
 
 while read x; do
-  if [ ! -d "$x" ]; then
+  dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index]="${dwf_all_results_root}$x"
+
+  #Sanity check: The results directory is actually a directory
+  if [ ! -d "${dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index]}" ]; then
     if [ "x$TESTING_RESULTS_SEQUENCES" != "xyes" ]; then
       echo "Error: _results_sequences.sh: '$dwf_tarball_results_dirs_sequence_file' supplied a results directory that is not actually a directory." >&2
       exit 1
     fi
   fi
-  dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index]="${dwf_all_results_root}$x"
 
   #Track the current index
   #Pattern-matching syntax ref: http://www.cyberciti.biz/faq/bash-find-out-if-variable-contains-substring/

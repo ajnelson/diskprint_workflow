@@ -17,7 +17,7 @@ set -x
 
 baseline="${dwf_tarball_results_dirs[0]}/make_fiwalk_dfxml.sh/fiout-alloc-only.dfxml"
 prior="${dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index_previous]}/make_fiwalk_dfxml.sh/fiout-alloc-only.dfxml"
-current="${dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index_next]}/make_fiwalk_dfxml.sh/fiout-alloc-only.dfxml"
+current="${dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index_current]}/make_fiwalk_dfxml.sh/fiout-alloc-only.dfxml"
 
 pushd "${outdir}" >/dev/null
 /opt/local/bin/python3.3 "$script_dir/idifference.py" --xml from_baseline.xml "$baseline" "$current"
