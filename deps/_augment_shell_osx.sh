@@ -1,5 +1,11 @@
 #!/bin/bash
 
+GREALPATH=`whereis grealpath`
+if [ -z "$GREALPATH" ]; then
+  echo "Error: _augment_shell_osx.sh: Need grealpath; please run the dependent-packages scripts." >&2
+  exit 1
+fi
+
 #This script augments OS X shells so:
 # * MacPort libraries and headers are included in linking.
 # * The ~/.bashrc file is included in the shell environment (for newer shell sessions than this script's invoker)
