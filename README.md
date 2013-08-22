@@ -5,6 +5,11 @@ This repository contains program configurations and calls used to process diskpr
 NB: The workflow in this repository is meant to be run by a dedicated shell user account in a Mac OS X environment.  The account's Bash environment must be configured to allow for local compilation and installation by augmentations to various `$PATH` variables.  If not already configured, a script is included to complete configuration.
 
 
+## Data
+
+This workflow operates on tarballs of virtual machines generated with VMWare Fusion.  (VMWare Workstation appears to generate data in a sufficiently similar format, but has not been tested.)  A diskprint is effectively a sequence of tarballs of a single virtual machine.  At times of interest in the machine usage, the machine is paused and archived with `tar`.  Virtual machine snapshots are not currently used.  The tarballs are then annotated and stored.  Storage references and the metadata are loaded into a Postgres database; example SQL statements that illustrate the annotations are in the `examples/` directory of the [Diskprint database](https://github.com/ajnelson/diskprint_database).
+
+
 ## Initial setup
 
 Before your first run, you will need to run these commands to guarantee your environment will support the differencing workflow:
