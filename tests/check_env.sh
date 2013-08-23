@@ -29,6 +29,11 @@ $PYTHON2 -c 'import differ_library'
 $PYTHON3 -c 'import differ_library'
 popd >/dev/null
 
+#Check that the DFXML regression tests pass
+pushd "${top_srcdir}/deps/dfxml.git/python" >/dev/null
+make check
+popd >/dev/null
+
 #Ensure libewf is installed
 set +e
 EWFACQUIRE=`which ewfacquire`
