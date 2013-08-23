@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #This script expects these variables:
-# * dwf_tarball_results_dirs_sequence_file
+# * dwf_tarball_results_dirs_sequence_file (should be defined in do_difference_workflow.sh)
 # * dwf_output_dir
 # * dwf_all_results_root
 #This script relaxes some sanity checks if the variable TESTING_RESULTS_SEQUENCES == 'yes'.
@@ -17,7 +17,7 @@ fi
 
 if [ ! -d "$dwf_all_results_root" ]; then
   if [ "x$TESTING_RESULTS_SEQUENCES" != "xyes" ]; then
-    echo "Error: _results_sequences.sh: '\$dwf_all_results_root' ('$dwf_all_results_root') is not a directory." >&2
+    echo "Error: _results_sequences.sh: '\$dwf_all_results_root' ($dwf_all_results_root) is not a directory." >&2
     exit 1
   fi
 fi
@@ -29,7 +29,7 @@ fi
 
 if [ ! -d "$dwf_output_dir" ]; then
   if [ "x$TESTING_RESULTS_SEQUENCES" != "xyes" ]; then
-    echo "Error: _results_sequences.sh: \$dwf_output_dir' ('$dwf_output_dir') is not a directory." >&2
+    echo "Error: _results_sequences.sh: \$dwf_output_dir' ($dwf_output_dir) is not a directory." >&2
     exit 1
   fi
 fi
@@ -40,7 +40,7 @@ if [ "x$dwf_tarball_results_dirs_sequence_file" == "x" ]; then
 fi
 
 if [ ! -r "$dwf_tarball_results_dirs_sequence_file" ]; then
-  echo "Error: _results_sequences.sh: '\$dwf_tarball_results_dirs_sequence_file' ('$dwf_tarball_results_dirs_sequence_file') is not a readable file." >&2
+  echo "Error: _results_sequences.sh: '\$dwf_tarball_results_dirs_sequence_file' ($dwf_tarball_results_dirs_sequence_file) is not a readable file." >&2
   exit 1
 fi
 
