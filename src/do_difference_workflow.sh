@@ -351,9 +351,13 @@ logandrunscript () {
 export -f logandrunscript
 
 count_script_errors() {
+  #Parameters:
+  # 1) Target script, for checking exit statuses
+  # 2) Optional: Target tarball (abs path to tarball, not to tarball result directory), in case only one result directory is to be checked.  (Really, this is in case the sequence file doesn't exist yet.)
   error_tally=0
   target_script="$1"
-  while read fimage; do
+  target_result="$2"
+  _tally() {
     statlog="${results_root_path}${fimage}/${target_script}.status.log"
     if [ -r "$statlog" ]; then
       logged_status="$(head -n1 "$statlog")"
@@ -361,7 +365,16 @@ count_script_errors() {
         error_tally=$(($error_tally+1))
       fi
     fi
-  done <"$sequence_file"
+  }
+  if [ -z "$2" ]; then
+    while read fimage; do
+      _tally
+    done <"$dwf_tarball_results_dirs_sequence_file"
+  else
+    echo "$target_result" | while read fimage; do
+      _tally
+    done
+  fi
   echo $error_tally
 }
 
@@ -370,7 +383,7 @@ my_inorder_parallel="parallel --keep-order -j$num_jobs"
 
 #Check that this is the end of a sequence.  Abort, status 0, if not an end.
 logandrunscript "$final_tarball_path" "$script_dirname/check_tarball_is_sequence_end.sh"
-any_errors=$(count_script_errors "check_tarball_is_sequence_end.sh")
+any_errors=$(count_script_errors "check_tarball_is_sequence_end.sh" "$final_tarball_path")
 if [ $any_errors -gt 0 ]; then
   echo "Note: Something went wrong checking whether this was a sequence end.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   exit 1
@@ -388,13 +401,13 @@ if [ $any_errors -gt 0 ]; then
   exit 1
 fi
 #(This next variable is hard-coded between here and the make_sequence_list.sh script.)
-sequence_file="$outdir_per_tarball/make_sequence_list.sh/sequence_tarballs.txt"
+export dwf_tarball_results_dirs_sequence_file="$outdir_per_tarball/make_sequence_list.sh/sequence_tarballs.txt"
 
 #Create E01s and RE output directories
 while read sequence_image; do
   echo "Note: Starting E01 processing for \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/invoke_vmdk_to_E01.sh"
-done<"$sequence_file"
+done<"$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "invoke_vmdk_to_E01.sh")
 
 #Bail out if any errors were found in the loop.
@@ -407,7 +420,7 @@ fi
 while read sequence_image; do
   echo "Note: Starting Fiwalk processing for \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/make_fiwalk_dfxml.sh"
-done<"$sequence_file"
+done<"$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "make_fiwalk_dfxml.sh")
 
 #Bail out if any errors were found in the loop.
@@ -420,7 +433,7 @@ fi
 while read sequence_image; do
   echo "Note: Starting differential DFXML processing for \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/make_differential_dfxml.sh"
-done<"$sequence_file"
+done<"$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "make_differential_dfxml.sh")
 
 #Tolerate errors with differential DFXML processing for now.
@@ -430,7 +443,7 @@ any_errors=$(count_script_errors "make_differential_dfxml.sh")
 while read sequence_image; do
   echo "Note: Starting RegXML Extractor processing for \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/invoke_regxml_extractor.sh"
-done<"$sequence_file"
+done<"$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "invoke_regxml_extractor.sh")
 
 #Bail out if any errors were found in the loop.
@@ -443,7 +456,7 @@ fi
 while read sequence_image; do
   echo "Note: Starting Perl modules on RegXML Extractor hives for \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/run_reg_perl.sh"
-done<"$sequence_file"
+done<"$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "run_reg_perl.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Note: Encountered $any_errors errors while generating Perl results.  Continuing; the Perl modules are experimental for purposes of the differencing workflow." >&2
@@ -453,7 +466,7 @@ fi
 rm -f "${script_outdir}/sequence_res.txt"
 while read sequence_image; do
   echo ${results_root_path}${sequence_image}/invoke_regxml_extractor.sh>>"${script_outdir}/sequence_res.txt"
-done<"$sequence_file"
+done<"$dwf_tarball_results_dirs_sequence_file"
 
 logandrunscript "$final_tarball_path" "$script_dirname/make_sequence_deltas.sh"
 any_errors=$(count_script_errors "make_sequence_deltas.sh")
