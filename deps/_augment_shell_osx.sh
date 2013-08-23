@@ -1,7 +1,7 @@
 #!/bin/bash
 
-GREALPATH=`whereis grealpath`
-if [ -z "$GREALPATH" ]; then
+GREALPATH=/opt/local/bin/grealpath
+if [ ! -x "$GREALPATH" ]; then
   echo "Error: _augment_shell_osx.sh: Need grealpath; please run the dependent-packages scripts." >&2
   exit 1
 fi
