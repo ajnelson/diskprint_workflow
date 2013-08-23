@@ -22,7 +22,7 @@ usage=$usage"Options:\n"
 usage=$usage"\t--cleanup {check (default), erase, list, ignore}\n"
 usage=$usage"\t  Handle erroneous results found under results_root: Check for any and prompt, erase without prompt, list and exit, or ignore.\n"
 usage=$usage"\t--config differ.cfg\n"
-usage=$usage"\t  Configuration file for connecting to database.  (Note: Use a space after '--config', this script doesn't use getopt yet.)\n"
+usage=$usage"\t  Configuration file for connecting to database.\n"
 usage=$usage"\t-h, --help\n"
 usage=$usage"\t  Print this help and quit.\n"
 usage=$usage"\t-j N, --jobs N\n"
@@ -118,6 +118,11 @@ while [ $# -ge 1 ]; do
   shift
 done
 
+#Code smell: GNU parallel's --quote flag does a good job of quoting variables, but when interacting with GNU getopt, causes multiple-whitespace strings to be interprted as blank arguments.  This simple loop lops off the blank head arguments.
+while [ -z "$1" ]; do
+  shift
+done
+
 #Check argument counts and parse into absolute paths
 final_tarball_path=
 results_root_path=
@@ -132,6 +137,10 @@ else
   if [ $# -ne 2 ]; then
     echo "Error: $script_basename: Expecting 2 arguments. Got $#." >&2
     echo "Debug: $script_basename: \$@ = $@" >&2
+    while [ $# -gt 0 ]; do
+      echo $1
+      shift
+    done
     usage_exit
   fi
   final_tarball_path="$(my_readlink "$1")"
@@ -151,7 +160,7 @@ find_errors() {
   find "$results_root_path" -name '*.sh.status.log' | \
     while read x; do
       if [ $(grep -v '0' "$x" | wc -l) -gt 0 ]; then
-        xbn=$(basename "$x")
+        xbn="$(basename "$x")"
         xdn="$(dirname "$x")"
         find "$xdn" -name "${xbn/%.status.log/}*" | sort
       fi
@@ -213,7 +222,7 @@ if [ $parallel_all -eq 1 ]; then
     parg_report_pidlog="--report-pidlog"
   fi
   ./sliceprocessor.py --config "$DIFFER_CONFIG" --tails_only | \
-    parallel -j$num_jobs \
+    parallel --quote -j$num_jobs \
       "$0" "$parg_report_pidlog" "$parg_re_export" --cleanup ignore --config "$DIFFER_CONFIG" --quiet {} "$@"
   exit 0
 fi
@@ -301,7 +310,7 @@ logandrunscript () {
 
   fimage="$1"
   fscript="$2"
-  fscript_basename=$(basename $fscript)
+  fscript_basename="$(basename $fscript)"
   foutdir="${results_root_path}${fimage}/${fscript_basename}"
 
   #Debug
@@ -347,7 +356,7 @@ count_script_errors() {
   while read fimage; do
     statlog="${results_root_path}${fimage}/${target_script}.status.log"
     if [ -r "$statlog" ]; then
-      logged_status=$(head -n1 "$statlog")
+      logged_status="$(head -n1 "$statlog")"
       if [ "x$logged_status" != "x0" ]; then
         error_tally=$(($error_tally+1))
       fi
@@ -379,7 +388,7 @@ if [ $any_errors -gt 0 ]; then
   exit 1
 fi
 #(This next variable is hard-coded between here and the make_sequence_list.sh script.)
-sequence_file=$outdir_per_tarball/make_sequence_list.sh/sequence_tarballs.txt
+sequence_file="$outdir_per_tarball/make_sequence_list.sh/sequence_tarballs.txt"
 
 #Create E01s and RE output directories
 while read sequence_image; do
