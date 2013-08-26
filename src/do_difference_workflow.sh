@@ -137,10 +137,6 @@ else
   if [ $# -ne 2 ]; then
     echo "Error: $script_basename: Expecting 2 arguments. Got $#." >&2
     echo "Debug: $script_basename: \$@ = $@" >&2
-    while [ $# -gt 0 ]; do
-      echo $1
-      shift
-    done
     usage_exit
   fi
   final_tarball_path="$(my_readlink "$1")"
