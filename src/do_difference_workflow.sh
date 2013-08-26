@@ -229,8 +229,11 @@ fi
 
 #The rest of this script is single-tarball mode.
 
+#Ensure we have an output directory
+outdir_per_tarball="${results_root_path}${final_tarball_path}"
+script_outdir="$outdir_per_tarball/$script_basename"
+
 #Set up logging
-script_outdir="${results_root_path}${final_tarball_path}/${script_basename}"
 mkdir -p "${script_outdir}" || exit 1
 script_out_log="${script_outdir}.out.log"
 script_err_log="${script_outdir}.err.log"
@@ -283,10 +286,7 @@ if [ ! -e "$final_tarball_path" ]; then
   exit 1
 fi
 
-#Ensure we have an output directory, and change into it
-outdir_per_tarball="${results_root_path}${final_tarball_path}"
-script_outdir="$outdir_per_tarball/$script_basename"
-mkdir -p "${script_outdir}"
+#Change into the output directory
 pushd "${script_outdir}" >/dev/null
 
 #Trigger exporting results to database by removing last export's output, if present
