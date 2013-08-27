@@ -152,13 +152,21 @@ export DIFFER_CONFIG="$(my_readlink $DIFFER_CONFIG)"
 #echo "Debug: $script_basename: \$DIFFER_CONFIG = $DIFFER_CONFIG" >&2
 
 #Call this function to list all of the directories and logs of scripts with erroneous output under the results root path
+#Pass --null-delimit as first arg to cause `find` to output with -print0, unsorted.
 find_errors() {
-  find "$results_root_path" -name '*.sh.status.log' | \
-    while read x; do
+  #Refs for reading paths with spaces in the name:
+  #* http://stackoverflow.com/a/11366230/1207160
+  #* http://www.cyberciti.biz/tips/handling-filenames-with-spaces-in-bash.html
+  find "$results_root_path" -name '*.sh.status.log' -print0 | \
+    while read -d $'\0' x; do
       if [ $(grep -v '0' "$x" | wc -l) -gt 0 ]; then
         xbn="$(basename "$x")"
         xdn="$(dirname "$x")"
-        find "$xdn" -name "${xbn/%.status.log/}*" | sort
+        if [ -z "$1" ]; then
+          find "$xdn" -name "${xbn/%.status.log/}*" | sort
+        elif [ "x$1" == "x--null-delimit" ]; then
+          find "$xdn" -name "${xbn/%.status.log/}*" -print0
+        fi
       fi
     done
 }
@@ -177,7 +185,7 @@ if [ "x$cleanup" == "xcheck" ]; then
       case $ynl in
         [Yy]* )
           echo "Note: Erasing prior erroneous results." >&2
-          find_errors | xargs rm -r
+          find_errors --null-delimit | xargs -0 rm -r
           break
           ;;
         [Nn]* )
@@ -202,7 +210,7 @@ elif [ "x$cleanup" == "xlist" ]; then
   find_errors
   exit 0
 elif [ "x$cleanup" == "xerase" ]; then
-  find_errors | xargs rm -r
+  find_errors --null-delimit | xargs -0 rm -r
 fi
 
 #Check for parallel-invocation mode
@@ -289,10 +297,10 @@ pushd "${script_outdir}" >/dev/null
 if [ $re_export -eq 1 ]; then
   if [ $(find "$outdir_per_tarball" -type d -name 'export_sqlite_to_postgres.sh' | wc -l) -gt 0 ]; then
     echo "Debug: Removing these directories and files." >&2
-    find "$outdir_per_tarball" -type d -name 'export_sqlite_to_postgres.sh' | xargs ls -d
-    find "$outdir_per_tarball" -type d -name 'export_sqlite_to_postgres.sh' | xargs rm -r
-    find "$outdir_per_tarball" -type f -name 'export_sqlite_to_postgres.sh.*.log' | xargs ls
-    find "$outdir_per_tarball" -type f -name 'export_sqlite_to_postgres.sh.*.log' | xargs rm
+    find "$outdir_per_tarball" -type d -name 'export_sqlite_to_postgres.sh' -print0 | xargs -0 ls -d
+    find "$outdir_per_tarball" -type d -name 'export_sqlite_to_postgres.sh' -print0 | xargs -0 rm -r
+    find "$outdir_per_tarball" -type f -name 'export_sqlite_to_postgres.sh.*.log' -print0 | xargs -0 ls
+    find "$outdir_per_tarball" -type f -name 'export_sqlite_to_postgres.sh.*.log' -print0 | xargs -0 rm
   fi
 fi
 
