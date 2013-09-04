@@ -4,10 +4,12 @@
 
 AFFLIB_REPO=https://github.com/simsong/AFFLIBv3.git
 AFFLIB_COMMIT=b0a36e392c26e4d9e95a85a41071d794d4b9ee73
+DFXMLSCHEMA_REPO=https://github.com/ajnelson/dfxml_schema.git
+DFXMLSCHEMA_COMMIT=3fdc11be39e067bc82602f9d8297dee42bcf6d2a
 DFXML_REPO=https://github.com/ajnelson/dfxml.git
 DFXML_COMMIT=b87ea15f1df934a414edf2f43791f87ea197a1a1
 RE_REPO=https://github.com/ajnelson/regxml_extractor.git
-RE_COMMIT=391ab930d2f611d60b6a069416bf40b10ad61746
+RE_COMMIT=da8e706538cb44e1d4cb3d5d7e561cc6dcdafa36
 
 #Fetch Git repositories with git-submodule...only, in SVN.
 
@@ -18,6 +20,13 @@ if [ ! -d deps/regxml_extractor.git ]; then
   pushd regxml_extractor.git >/dev/null
   git checkout $RE_COMMIT
   popd >/dev/null
+  popd >/dev/null
+fi
+
+if [ ! -d deps/dfxml_schema.git ]; then
+  echo "Note: Cloning DFXML Schema Git repository." >&2
+  pushd deps/ >/dev/null
+  git clone $DFXMLSCHEMA_REPO dfxml_schema.git
   popd >/dev/null
 fi
 
