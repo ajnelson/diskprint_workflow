@@ -151,6 +151,9 @@ export dwf_all_results_root="$results_root_path"
 export DIFFER_CONFIG="$(my_readlink $DIFFER_CONFIG)"
 #echo "Debug: $script_basename: \$DIFFER_CONFIG = $DIFFER_CONFIG" >&2
 
+export dwf_dfxml_schema="$script_dirname/../deps/dfxml_schema/dfxml.xsd"
+echo "Debug: \$dwf_dfxml_schema = $dwf_dfxml_schema" >&2
+
 #Call this function to list all of the directories and logs of scripts with erroneous output under the results root path
 #Pass --null-delimit as first arg to cause `find` to output with -print0, unsorted.
 find_errors() {
@@ -432,6 +435,15 @@ if [ $any_errors -gt 0 ]; then
   echo "Note: Encountered $any_errors errors in the Fiwalk loop.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   exit 1
 fi
+
+#Try validating Fiwalk output with DFXML schema
+while read sequence_image; do
+  echo "Note: Validating Fiwalk results from \"$sequence_image\"." >&2
+  logandrunscript "$sequence_image" "$script_dirname/validate_fiwalk_dfxml.sh"
+done<"$dwf_tarball_results_dirs_sequence_file"
+any_errors=$(count_script_errors "validate_fiwalk_dfxml.sh")
+
+#Tolerate errors with DFXML validation for now.
 
 #Create differential DFXML output directories after all Fiwalk output is successfully done
 while read sequence_image; do
