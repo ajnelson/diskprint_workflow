@@ -151,7 +151,7 @@ export dwf_all_results_root="$results_root_path"
 export DIFFER_CONFIG="$(my_readlink $DIFFER_CONFIG)"
 #echo "Debug: $script_basename: \$DIFFER_CONFIG = $DIFFER_CONFIG" >&2
 
-export dwf_dfxml_schema="$script_dirname/../deps/dfxml_schema/dfxml.xsd"
+export dwf_dfxml_schema="$script_dirname/../deps/dfxml_schema.git/dfxml.xsd"
 echo "Debug: \$dwf_dfxml_schema = $dwf_dfxml_schema" >&2
 
 #Call this function to list all of the directories and logs of scripts with erroneous output under the results root path
