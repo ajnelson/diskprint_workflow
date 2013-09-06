@@ -5,7 +5,9 @@ path_to_e01="${2/%make_fiwalk_dfxml.sh/invoke_vmdk_to_E01.sh}/out.E01"
 path_to_dfxml="${output_dir}/fiout.dfxml"
 path_to_ao_dfxml="${output_dir}/fiout-alloc-only.dfxml"
 
-fiwalk -G0 -X"$path_to_dfxml" -f "$path_to_e01"
+#This command is having issues with blank disk images.
+#fiwalk -G0 -X"$path_to_dfxml" -f "$path_to_e01"
+
 fiwalk -G0 -O -X"$path_to_ao_dfxml" -f "$path_to_e01"
 
 #Just for the DiskPrints project, check that at least one partition was extracted.
