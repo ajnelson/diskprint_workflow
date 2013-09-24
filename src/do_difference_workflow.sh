@@ -425,10 +425,10 @@ fi
 
 #Create Fiwalk DFXML output directories after all E01 output's successfully done
 while read sequence_image; do
-  echo "Note: Starting Fiwalk processing for \"$sequence_image\"." >&2
-  logandrunscript "$sequence_image" "$script_dirname/make_fiwalk_dfxml.sh"
+  echo "Note: Starting Fiwalk allocated-only processing for \"$sequence_image\"." >&2
+  logandrunscript "$sequence_image" "$script_dirname/make_fiwalk_dfxml_alloc.sh"
 done<"$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "make_fiwalk_dfxml.sh")
+any_errors=$(count_script_errors "make_fiwalk_dfxml_alloc.sh")
 
 #Bail out if any errors were found in the loop.
 if [ $any_errors -gt 0 ]; then
@@ -436,12 +436,27 @@ if [ $any_errors -gt 0 ]; then
   exit 1
 fi
 
+#(Experimental) Create Fiwalk DFXML, including unallocated content.
+while read sequence_image; do
+  echo "Note: Starting Fiwalk all-files processing for \"$sequence_image\"." >&2
+  logandrunscript "$sequence_image" "$script_dirname/make_fiwalk_dfxml_all.sh"
+done<"$dwf_tarball_results_dirs_sequence_file"
+any_errors=$(count_script_errors "make_fiwalk_dfxml_all.sh")
+
+#Tolerate errors in this loop.
+
 #Try validating Fiwalk output with DFXML schema
 while read sequence_image; do
   echo "Note: Validating Fiwalk results from \"$sequence_image\"." >&2
-  logandrunscript "$sequence_image" "$script_dirname/validate_fiwalk_dfxml.sh"
+  logandrunscript "$sequence_image" "$script_dirname/validate_fiwalk_dfxml_alloc.sh"
 done<"$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "validate_fiwalk_dfxml.sh")
+any_errors=$(count_script_errors "validate_fiwalk_dfxml_alloc.sh")
+
+while read sequence_image; do
+  echo "Note: Validating Fiwalk results from \"$sequence_image\"." >&2
+  logandrunscript "$sequence_image" "$script_dirname/validate_fiwalk_dfxml_all.sh"
+done<"$dwf_tarball_results_dirs_sequence_file"
+any_errors=$(count_script_errors "validate_fiwalk_dfxml_all.sh")
 
 #Tolerate errors with DFXML validation for now.
 
