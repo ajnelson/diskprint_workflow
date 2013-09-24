@@ -462,10 +462,16 @@ any_errors=$(count_script_errors "validate_fiwalk_dfxml_all.sh")
 
 #Create differential DFXML output directories after all Fiwalk output is successfully done
 while read sequence_image; do
-  echo "Note: Starting differential DFXML processing for \"$sequence_image\"." >&2
-  logandrunscript "$sequence_image" "$script_dirname/make_differential_dfxml.sh"
+  echo "Note: Starting differential DFXML processing, vs. baseline, for \"$sequence_image\"." >&2
+  logandrunscript "$sequence_image" "$script_dirname/make_differential_dfxml_baseline.sh"
 done<"$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "make_differential_dfxml.sh")
+any_errors=$(count_script_errors "make_differential_dfxml_baseline.sh")
+
+while read sequence_image; do
+  echo "Note: Starting differential DFXML processing, vs. previous image, for \"$sequence_image\"." >&2
+  logandrunscript "$sequence_image" "$script_dirname/make_differential_dfxml_prior.sh"
+done<"$dwf_tarball_results_dirs_sequence_file"
+any_errors=$(count_script_errors "make_differential_dfxml_prior.sh")
 
 #Tolerate errors with differential DFXML processing for now.
 
