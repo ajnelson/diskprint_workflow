@@ -4,15 +4,19 @@
 #The variable maybe_alloc_only might be defined by the including script.
 
 if [ -z "$maybe_alloc_only" ]; then
-  echo "The variable \$maybe_alloc_only wasn't found; it should be defined just before including this file." >&2
+  echo "_make_fiwalk_dfxml.sh: Error: The variable \$maybe_alloc_only wasn't found; it should be defined just before including this file." >&2
   exit 1
 fi
 
-output_dir="${2}"
-path_to_e01="$output_dir/../invoke_vmdk_to_E01.sh/out.E01"
-path_to_dfxml="${output_dir}/fiout.dfxml"
+alloc_flag=
+if [ "x$maybe_alloc_only" == "xyes" ]; then
+  alloc_flag="-O"
+fi
 
-fiwalk -G0 "$maybe_alloc_only" -X"$path_to_dfxml" -f "$path_to_e01"
+path_to_e01="${dwf_output_dir}/../invoke_vmdk_to_E01.sh/out.E01"
+path_to_dfxml="${dwf_output_dir}/fiout.dfxml"
+
+fiwalk -G0 "$alloc_flag" -X"$path_to_dfxml" -f "$path_to_e01"
 
 #Just for the DiskPrints project, check that at least one partition was extracted.
 if [ $(grep '<volume ' "$path_to_dfxml" | wc -l) -eq 0 ]; then

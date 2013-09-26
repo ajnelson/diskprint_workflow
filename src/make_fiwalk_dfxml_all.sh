@@ -2,5 +2,6 @@
 
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 
-maybe_alloc_only=
+dwf_output_dir="$2"
+maybe_alloc_only=no
 source "${script_dir}/_make_fiwalk_dfxml.sh"
