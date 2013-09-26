@@ -244,14 +244,12 @@ script_outdir="$outdir_per_tarball/$script_basename"
 mkdir -p "${script_outdir}" || exit 1
 script_out_log="${script_outdir}.out.log"
 script_err_log="${script_outdir}.err.log"
-script_total_log="${script_outdir}.log"
 script_status_log="${script_outdir}.status.log"
 
 #Clear old logs
 rm -f \
   "$script_out_log" \
   "$script_err_log" \
-  "$script_total_log" \
   "$script_status_log"
 
 #Log the script exiting from here forward
@@ -272,9 +270,8 @@ trap 'exit_trap ${LINENO} $?' EXIT
 
 #Log stdout and stderr from this point on
 #Light Bash docs on redirecting current script's std*: http://tldp.org/LDP/abs/html/x17891.html
-#Tee piping is an extension of this Stack Overflow answer: http://stackoverflow.com/a/3403786/1207160
 if [ $report_pidlog -eq 1 ]; then
-  echo "Debug: $script_basename: Stdout and stderr of process $$ redirecting to $script_total_log." >&2
+  echo "Debug: $script_basename: Stdout and stderr of process $$ redirecting to ${script_outdir}.{out,err}.log." >&2
 fi
 #Maybe preserve stdin and stdout
 if [ $quiet -eq 1 ]; then
@@ -284,9 +281,10 @@ else
   exec 6>&1
   exec 7>&2
 fi
-#Log stderr and stdout to separated and in-order logs
-exec 1> >(tee -a "$script_total_log" | tee -a "$script_out_log" >&6)
-exec 2> >(tee -a "$script_total_log" | tee -a "$script_err_log" >&7)
+#Log stderr and stdout to separated logs
+#(In-order logs as well seemed to be problematic)
+exec 1> >(tee -a "$script_out_log" >&6)
+exec 2> >(tee -a "$script_err_log" >&7)
 
 if [ ! -e "$final_tarball_path" ]; then
   echo "Error: $script_basename: Input tarball does not exist." >&2
