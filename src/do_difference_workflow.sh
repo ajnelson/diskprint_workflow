@@ -400,6 +400,7 @@ if [ ! -r "${results_root_path}${final_tarball_path}/check_tarball_is_sequence_e
   exit 0
 fi
 
+
 #Create the sequence list.
 logandrunscript "$final_tarball_path" "$script_dirname/make_sequence_list.sh"
 any_errors=$(count_script_errors "make_sequence_list.sh")
@@ -410,7 +411,8 @@ fi
 #(This next variable is hard-coded between here and the make_sequence_list.sh script.)
 export dwf_tarball_results_dirs_sequence_file="$outdir_per_tarball/make_sequence_list.sh/sequence_tarballs.txt"
 
-#Create E01s and RE output directories
+
+#Create E01s
 while read sequence_image; do
   echo "Note: Starting E01 processing for \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/invoke_vmdk_to_E01.sh"
@@ -422,6 +424,17 @@ if [ $any_errors -gt 0 ]; then
   echo "Note: Encountered $any_errors errors in the E01 loop.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   exit 1
 fi
+
+
+#(Experimental) Create Fiwalk DFXML, including unallocated content.
+while read sequence_image; do
+  echo "Note: Starting Fiwalk all-files processing for \"$sequence_image\"." >&2
+  logandrunscript "$sequence_image" "$script_dirname/make_fiwalk_dfxml_all.sh"
+done<"$dwf_tarball_results_dirs_sequence_file"
+any_errors=$(count_script_errors "make_fiwalk_dfxml_all.sh")
+
+#Tolerate errors in this loop.
+
 
 #Create Fiwalk DFXML output directories after all E01 output's successfully done
 while read sequence_image; do
@@ -436,14 +449,6 @@ if [ $any_errors -gt 0 ]; then
   exit 1
 fi
 
-#(Experimental) Create Fiwalk DFXML, including unallocated content.
-while read sequence_image; do
-  echo "Note: Starting Fiwalk all-files processing for \"$sequence_image\"." >&2
-  logandrunscript "$sequence_image" "$script_dirname/make_fiwalk_dfxml_all.sh"
-done<"$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "make_fiwalk_dfxml_all.sh")
-
-#Tolerate errors in this loop.
 
 #Try validating Fiwalk output with DFXML schema
 while read sequence_image; do
@@ -460,6 +465,7 @@ any_errors=$(count_script_errors "validate_fiwalk_dfxml_all.sh")
 
 #Tolerate errors with DFXML validation for now.
 
+
 #Create differential DFXML output directories after all Fiwalk output is successfully done
 while read sequence_image; do
   echo "Note: Starting differential DFXML processing, vs. baseline, for \"$sequence_image\"." >&2
@@ -475,6 +481,7 @@ any_errors=$(count_script_errors "make_differential_dfxml_prior.sh")
 
 #Tolerate errors with differential DFXML processing for now.
 
+
 #Create RE output directories after all E01 output's successfully done.
 #(Creating per-image RE immediately after creating the E01 (and similarly with Fiwalk) means basically trying to integrate Make again: Suddenly, there's a piecemeal, per-tarball dependency graph that has to be defined. A Bash array could probably do it, but recovering from failure becomes tedious right-quick.)
 while read sequence_image; do
@@ -489,6 +496,7 @@ if [ $any_errors -gt 0 ]; then
   exit 1
 fi
 
+
 #Insert Perl module results; non-critical for now.
 while read sequence_image; do
   echo "Note: Starting Perl modules on RegXML Extractor hives for \"$sequence_image\"." >&2
@@ -499,12 +507,15 @@ if [ $any_errors -gt 0 ]; then
   echo "Note: Encountered $any_errors errors while generating Perl results.  Continuing; the Perl modules are experimental for purposes of the differencing workflow." >&2
 fi
 
+
 #Translate the successful RE outputs into a sequence
 rm -f "${script_outdir}/sequence_res.txt"
 while read sequence_image; do
   echo ${results_root_path}${sequence_image}/invoke_regxml_extractor.sh>>"${script_outdir}/sequence_res.txt"
 done<"$dwf_tarball_results_dirs_sequence_file"
 
+
+#Create the deltas dataset for the whole sequence
 logandrunscript "$final_tarball_path" "$script_dirname/make_sequence_deltas.sh"
 any_errors=$(count_script_errors "make_sequence_deltas.sh")
 if [ $any_errors -gt 0 ]; then
@@ -512,6 +523,8 @@ if [ $any_errors -gt 0 ]; then
   exit 1
 fi
 
+
+#Export the results to Postgres
 logandrunscript "$final_tarball_path" "$script_dirname/export_sqlite_to_postgres.sh"
 any_errors=$(count_script_errors "export_sqlite_to_postgres.sh")
 if [ $any_errors -gt 0 ]; then
@@ -519,5 +532,6 @@ if [ $any_errors -gt 0 ]; then
   echo "Warning: At this point you probably need to delete some records from Postgres.  See the error log for export_sqlite_to_postgres.sh, there are some DELETE statements pre-built." >&2
   exit 1
 fi
+
 
 popd >/dev/null
