@@ -7,4 +7,4 @@ dwf_output_dir="$2"
 source "$script_dir/_results_sequences.sh"
 
 target_dfxml_index=0
-source _make_differential_dfxml.sh
+source "${script_dir}/_make_differential_dfxml.sh"
