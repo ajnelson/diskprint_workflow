@@ -2,7 +2,7 @@
 
 # When this script runs successfully, it sets up the following:
 #
-#  * The current user will be able to compile and link tools without administrator rights - tools will be installed under the prefix ~/local.
+#  * The current user will be able to compile and link tools without administrator rights - tools will be installed under the prefix ./local.
 #  * The system will have several required pacakges installed, including compiler tools (autotools), Ocaml, and Python 3.
 #  * The current user will be able to run EWF programs, AFF programs, TSK programs, fiwalk, and hivexml
 #  * Specific versions of software tracked by Git will be built and installed.  If this script is updated, the Git-tracked software will also be updated and re-built as necessary.
@@ -97,7 +97,9 @@ if [ $RE_should_build -eq 1 -o ! -r deps/regxml_extractor.git/deps/sleuthkit/REA
 fi
 
 #Build libaff
-if [ "x$(which affconvert)" == "x" ]; then
+if [ "x$(which affconvert)" == "x" -o \
+  $(which affconvert | grep "$DWF_BUILD_PREFIX" | wc -l) -ne 1 \
+]; then
   AFFLIB_should_build=1
 fi
 if [ $AFFLIB_should_build -eq 1 ]; then
@@ -109,10 +111,13 @@ if [ $AFFLIB_should_build -eq 1 ]; then
   popd >/dev/null
 fi
 
-#Ensure Fiwalk (and thus RegXML Extractor) are built:
+#Ensure Fiwalk (and RegXML Extractor) are built:
 # (1) With AFF and EWF support
 # (2) Up-to-date
 if [ "x$(which fiwalk)" == "x" -o \
+  "x$(which regxml_extractor.sh)" == "x" -o \
+  $(which fiwalk | grep "$DWF_BUILD_PREFIX" | wc -l) -ne 1 -o \
+  $(which regxml_extractor.sh | grep "$DWF_BUILD_PREFIX" | wc -l) -ne 1 -o \
   $(fiwalk | grep 'NO AFFLIB SUPPORT' | wc -l) -gt 0 -o \
   $(fiwalk | grep 'NO LIBEWF SUPPORT' | wc -l) -gt 0 \
 ]; then
