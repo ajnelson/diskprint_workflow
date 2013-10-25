@@ -16,6 +16,8 @@
 set -e
 set -x
 
+source _env_extra.sh
+
 source git_submodule_init.sh
 
 #These flags are potentially raised at various steps.
@@ -101,7 +103,7 @@ fi
 if [ $AFFLIB_should_build -eq 1 ]; then
   pushd deps/AFFLIBv3.git >/dev/null
   ./bootstrap.sh
-  ./configure --prefix=$HOME/local
+  ./configure --prefix="$DWF_BUILD_PREFIX"
   make -j || make #If parallel make fails, re-run make to see what the error was
   make install
   popd >/dev/null
@@ -120,7 +122,8 @@ fi
 if [ $RE_should_build -eq 1 ]; then
   pushd deps/regxml_extractor.git >/dev/null
   git submodule sync
-  deps/build_submodules.sh local
+  RE_HIVEX_CONFIGURE_EXTRA_FLAGS="LDFLAGS=-L/opt/local/lib CPPFLAGS=-I/opt/local/include" \
+    deps/build_submodules.sh local "$DWF_BUILD_PREFIX"
   echo "Note: Checking that afflib is linked into Fiwalk..." >&2
   test $(fiwalk | grep 'NO AFFLIB SUPPORT' | wc -l) -eq 0
   echo "Afflib link is good." >&2
@@ -128,7 +131,7 @@ if [ $RE_should_build -eq 1 ]; then
   test $(fiwalk | grep 'NO LIBEWF SUPPORT' | wc -l) -eq 0
   echo "Libewf link is good." >&2
   ./bootstrap.sh
-  ./configure --prefix=$HOME/local
+  ./configure --prefix="$DWF_BUILD_PREFIX"
   make 
   make install
   popd >/dev/null
