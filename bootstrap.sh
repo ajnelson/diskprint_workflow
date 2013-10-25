@@ -98,7 +98,7 @@ fi
 
 #Build libaff
 if [ "x$(which affconvert)" == "x" -o \
-  $(which affconvert | grep "$DWF_BUILD_PREFIX" | wc -l) -ne 1
+  $(which affconvert | grep "$DWF_BUILD_PREFIX" | wc -l) -ne 1 \
 ]; then
   AFFLIB_should_build=1
 fi
@@ -116,8 +116,8 @@ fi
 # (2) Up-to-date
 if [ "x$(which fiwalk)" == "x" -o \
   "x$(which regxml_extractor.sh)" == "x" -o \
-  $(which fiwalk | grep "$DWF_BUILD_PREFIX" | wc -l) -ne 1
-  $(which regxml_extractor.sh | grep "$DWF_BUILD_PREFIX" | wc -l) -ne 1
+  $(which fiwalk | grep "$DWF_BUILD_PREFIX" | wc -l) -ne 1 -o \
+  $(which regxml_extractor.sh | grep "$DWF_BUILD_PREFIX" | wc -l) -ne 1 -o \
   $(fiwalk | grep 'NO AFFLIB SUPPORT' | wc -l) -gt 0 -o \
   $(fiwalk | grep 'NO LIBEWF SUPPORT' | wc -l) -gt 0 \
 ]; then
