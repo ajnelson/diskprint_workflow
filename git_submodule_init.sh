@@ -7,7 +7,7 @@ AFFLIB_COMMIT=b0a36e392c26e4d9e95a85a41071d794d4b9ee73
 DFXMLSCHEMA_REPO=https://github.com/ajnelson/dfxml_schema.git
 DFXMLSCHEMA_COMMIT=b4b240c2126f395274ab20baf004a639e8d92e6f
 DFXML_REPO=https://github.com/ajnelson/dfxml.git
-DFXML_COMMIT=b87ea15f1df934a414edf2f43791f87ea197a1a1
+DFXML_COMMIT=cc106a6aa1af760da510b153321f5612f5d51bbe
 RE_REPO=https://github.com/ajnelson/regxml_extractor.git
 RE_COMMIT=5021b3932fc39cca444fd1addede2ee6c6ddfde5
 
