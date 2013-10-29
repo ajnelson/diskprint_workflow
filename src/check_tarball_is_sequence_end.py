@@ -1,61 +1,12 @@
 #!/opt/local/bin/python2.7
 
 """
-This script runs a somewhat complicated SQL query to determine if the requested tarball path is for a slice sequence end.  Here is a walkthrough of the query, as three set definitions.  The actual query includes some more straightforward table-joining components and the actual query parameter.
+This script exits 0 status on concluding a tarball path is of a tarball sequence end.
 
-The set of all slices that have slice X as their immediate ancestor (which necessarily must match on osetid and appetid):
-
-SELECT
-  *
-FROM
-  diskprint.slice
-WHERE
-  osetid = Z AND
-  appetid = Y AND
-  slicepredecessorid = X
-;
-
-
-The set of all sliceids that precede some slice:
-
-SELECT
-  s1.osetid,
-  s1.appetid,
-  s1.slicepredecessorid
-FROM
-  diskprint.slice AS s1,
-  diskprint.slice AS s2
-WHERE
-  s1.osetid = s2.osetid AND
-  s1.appetid = s2.appetid AND
-  s1.slicepredecessorid = s2.sliceid
-;
-
-
-The set of all sliceids that precede no slice - that is, sequence ends:
-
-SELECT
-  *
-FROM
-  diskprint.slice
-WHERE
-  (osetid, appetid, sliceid) NOT IN (
-    SELECT
-      s1.osetid,
-      s1.appetid,
-      s1.slicepredecessorid
-    FROM
-      diskprint.slice AS s1,
-      diskprint.slice AS s2
-    WHERE
-      s1.osetid = s2.osetid AND
-      s1.appetid = s2.appetid AND
-      s1.slicepredecessorid = s2.sliceid
-  )
-;
+It exits 1 if it concludes otherwise, or can't find the tarball.
 """
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 import sys
 import os
@@ -69,6 +20,7 @@ def main():
 
     (inconn,incursor) = differ_library.db_conn_from_config_path(args.config)
 
+    #Ensure that the tarball path is in the database.
     incursor.execute("""
 SELECT
   COUNT(*) AS tally
@@ -82,27 +34,19 @@ WHERE
     if len(inrows) != 1:
         raise Exception("Could not find tarball path in diskprint.storage table: %r." % args.slice_path)
 
-    incursor.execute("""
+    #Check that the tarball path is to a sequence end.
+    incursor.execute("""\
 SELECT
-  storage.*
+  *
 FROM
-  diskprint.slice AS slice,
   diskprint.storage AS storage
 WHERE
   storage.location = %s AND
-  storage.slicehash = slice.slicehash AND
-  (slice.osetid, slice.appetid, slice.sliceid) NOT IN (
-    SELECT
-      s1.osetid,
-      s1.appetid,
-      s1.slicepredecessorid
+  storage.slicehash IN (
+    SELECT DISTINCT
+      end_slicehash
     FROM
-      diskprint.slice AS s1,
-      diskprint.slice AS s2
-    WHERE
-      s1.osetid = s2.osetid AND
-      s1.appetid = s2.appetid AND
-      s1.slicepredecessorid = s2.sliceid
+      storage.sequence
   )
 ;
     """, (args.slice_path,))
