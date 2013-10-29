@@ -46,7 +46,7 @@ WHERE
     SELECT DISTINCT
       end_slicehash
     FROM
-      storage.sequence
+      diskprint.sequence
   )
 ;
     """, (args.slice_path,))
