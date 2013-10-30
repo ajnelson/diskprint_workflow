@@ -301,12 +301,13 @@ fi
 #--AJN 2013-10-30
 #Pick Pythons
 source "${this_script_dir}/_pick_pythons.sh"
-dwf_sequence_id="$("$PYTHON3" "${this_script_dir}/tarball_path_to_sequence_id.py")"
+dwf_sequence_id="$("$PYTHON3" "${this_script_dir}/tarball_path_to_sequence_id.py" "$final_tarball_path")"
 rc=$?
 if [ $rc -ne 0 ]; then
   echo "$0: Error: tarball_path_to_sequence_id.py raised an error." >&2
   exit $rc
 fi
+echo "$0: Debug: \$dwf_sequence_id = $dwf_sequence_id" >&2
 export dwf_sequence_id
 outdir_per_sequence="${results_root_path}/sequence/${dwf_sequence_id}"
 
@@ -384,13 +385,14 @@ export -f logandrunscript
 
 count_script_errors() {
   #Parameters:
-  # 1) Target script, for checking exit statuses
-  # 2) Optional: Target tarball (abs path to tarball, not to tarball result directory), in case only one result directory is to be checked.  (Really, this is in case the sequence file doesn't exist yet.)
+  # 1) slice|sequence
+  # 2) Target script, for checking exit statuses
+  # 3) Optional: Target result base (slice or sequence) directory, parent of the script output directory.
   error_tally=0
-  target_script="$1"
-  target_result="$2"
+  slice_or_sequence="$1"
+  target_script="$2"
+  target_result_base="$3"
   _tally() {
-    statlog="${results_root_path}${fimage}/${target_script}.status.log"
     if [ -r "$statlog" ]; then
       logged_status="$(head -n1 "$statlog")"
       if [ "x$logged_status" != "x0" ]; then
@@ -398,14 +400,22 @@ count_script_errors() {
       fi
     fi
   }
-  if [ -z "$2" ]; then
-    while read fimage; do
+  if [ "$slice_or_sequence" == "slice" ]; then
+    if [ -z "$3" ]; then
+      while read tarball_abs_path; do
+        statlog="${results_root_path}/slice${tarball_abs_path}/${target_script}.status.log"
+        _tally
+      done <"$dwf_tarball_results_dirs_sequence_file"
+    else
+      statlog="${target_result}/${target_script}.status.log"
       _tally
-    done <"$dwf_tarball_results_dirs_sequence_file"
+    fi
+  elif [ "$slice_or_sequence" == "sequence" ]; then
+    statlog="${outdir_per_sequence}/${target_script}.status.log"
+    _tally
   else
-    echo "$target_result" | while read fimage; do
-      _tally
-    done
+    echo "$0: Error: count_script_errors called with bad first argument (should be 'slice' or 'sequence'): $slice_or_sequence." >&2
+    exit 1
   fi
   echo $error_tally
 }
@@ -415,12 +425,12 @@ my_inorder_parallel="parallel --keep-order -j$num_jobs"
 
 #Check that this is the end of a sequence.  Abort, status 0, if not an end.
 logandrunscript "$final_tarball_path" "$script_dirname/check_tarball_is_sequence_end.sh" slice
-any_errors=$(count_script_errors "check_tarball_is_sequence_end.sh" "$final_tarball_path")
+any_errors=$(count_script_errors slice "check_tarball_is_sequence_end.sh" "$final_tarball_path")
 if [ $any_errors -gt 0 ]; then
   echo "Note: Something went wrong checking whether this was a sequence end.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   exit 1
 fi
-if [ ! -r "${results_root_path}${final_tarball_path}/check_tarball_is_sequence_end.sh/YES" ]; then
+if [ ! -r "${results_root_path}/slice${final_tarball_path}/check_tarball_is_sequence_end.sh/YES" ]; then
   echo "Note: This tarball does not appear to be a sequence end.  Quitting.  The workflow should be called on the end of a slice sequence (i.e. a slice that precedes no other slice)." >&2
   exit 0
 fi
@@ -428,7 +438,7 @@ fi
 
 #Create the sequence list.
 logandrunscript "$final_tarball_path" "$script_dirname/make_sequence_list.sh" sequence
-any_errors=$(count_script_errors "make_sequence_list.sh")
+any_errors=$(count_script_errors sequence "make_sequence_list.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Note: Something went wrong making the sequence list.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   exit 1
@@ -442,7 +452,7 @@ while read sequence_image; do
   echo "Note: Starting E01 processing for \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/invoke_vmdk_to_E01.sh" slice
 done<"$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "invoke_vmdk_to_E01.sh")
+any_errors=$(count_script_errors slice "invoke_vmdk_to_E01.sh")
 
 #Bail out if any errors were found in the loop.
 if [ $any_errors -gt 0 ]; then
@@ -456,7 +466,7 @@ while read sequence_image; do
   echo "Note: Starting Fiwalk all-files processing for \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/make_fiwalk_dfxml_all.sh" slice
 done<"$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "make_fiwalk_dfxml_all.sh")
+any_errors=$(count_script_errors slice "make_fiwalk_dfxml_all.sh")
 
 #Tolerate errors in this loop.
 
@@ -466,7 +476,7 @@ while read sequence_image; do
   echo "Note: Starting Fiwalk allocated-only processing for \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/make_fiwalk_dfxml_alloc.sh" slice
 done<"$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "make_fiwalk_dfxml_alloc.sh")
+any_errors=$(count_script_errors slice "make_fiwalk_dfxml_alloc.sh")
 
 #Bail out if any errors were found in the loop.
 if [ $any_errors -gt 0 ]; then
@@ -480,13 +490,13 @@ while read sequence_image; do
   echo "Note: Validating Fiwalk results from \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/validate_fiwalk_dfxml_alloc.sh" slice
 done<"$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "validate_fiwalk_dfxml_alloc.sh")
+any_errors=$(count_script_errors slice "validate_fiwalk_dfxml_alloc.sh")
 
 while read sequence_image; do
   echo "Note: Validating Fiwalk results from \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/validate_fiwalk_dfxml_all.sh" slice
 done<"$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "validate_fiwalk_dfxml_all.sh")
+any_errors=$(count_script_errors slice "validate_fiwalk_dfxml_all.sh")
 
 #Tolerate errors with DFXML validation for now.
 
@@ -496,13 +506,13 @@ while read sequence_image; do
   echo "Note: Starting differential DFXML processing, vs. baseline, for \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/make_differential_dfxml_baseline.sh" slice
 done<"$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "make_differential_dfxml_baseline.sh")
+any_errors=$(count_script_errors slice "make_differential_dfxml_baseline.sh")
 
 while read sequence_image; do
   echo "Note: Starting differential DFXML processing, vs. previous image, for \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/make_differential_dfxml_prior.sh" slice
 done<"$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "make_differential_dfxml_prior.sh")
+any_errors=$(count_script_errors slice "make_differential_dfxml_prior.sh")
 
 #Tolerate errors with differential DFXML processing for now.
 
@@ -513,7 +523,7 @@ while read sequence_image; do
   echo "Note: Starting RegXML Extractor processing for \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/invoke_regxml_extractor.sh" slice
 done<"$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "invoke_regxml_extractor.sh")
+any_errors=$(count_script_errors slice "invoke_regxml_extractor.sh")
 
 #Bail out if any errors were found in the loop.
 if [ $any_errors -gt 0 ]; then
@@ -527,7 +537,7 @@ while read sequence_image; do
   echo "Note: Starting Perl modules on RegXML Extractor hives for \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/run_reg_perl.sh" slice
 done<"$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "run_reg_perl.sh")
+any_errors=$(count_script_errors slice "run_reg_perl.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Note: Encountered $any_errors errors while generating Perl results.  Continuing; the Perl modules are experimental for purposes of the differencing workflow." >&2
 fi
@@ -535,7 +545,7 @@ fi
 
 #Create the deltas dataset for the whole sequence
 logandrunscript "$final_tarball_path" "$script_dirname/make_sequence_deltas.sh" sequence
-any_errors=$(count_script_errors "make_sequence_deltas.sh")
+any_errors=$(count_script_errors sequence "make_sequence_deltas.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Error: Something went wrong aggregating the sequence results into SQLite.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   exit 1
@@ -544,7 +554,7 @@ fi
 
 #Export the results to Postgres
 logandrunscript "$final_tarball_path" "$script_dirname/export_sqlite_to_postgres.sh" sequence
-any_errors=$(count_script_errors "export_sqlite_to_postgres.sh")
+any_errors=$(count_script_errors sequence "export_sqlite_to_postgres.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Error: Something went wrong exporting the SQLite to Postgres.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   echo "Warning: At this point you probably need to delete some records from Postgres.  See the error log for export_sqlite_to_postgres.sh, there are some DELETE statements pre-built." >&2

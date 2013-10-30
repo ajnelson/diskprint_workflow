@@ -1,7 +1,6 @@
 #!/bin/bash
 #Assumed to be run after RegXML Extractor successfully completes.
-#Assumes a few directories are present:
-# * All the output directories for RegXML Extractor listed in $sequenceoutroot/make_sequence_list.sh/sequence_tarballs.txt
+#Assumes this directory is present:
 # * $top_src_dir/local/share/regxml_extractor/python - the installed directory of RegXML Extractor's Python code
 #Assumes the environment contains:
 # * dwf_sequence_id

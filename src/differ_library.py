@@ -34,9 +34,15 @@ def db_conn_from_config_path(cfg_path):
 
 def split_sequence_id(sequence_id_string):
     parts = sequence_id_string.split("-")
-    osetid = parts[0]
-    appetid = parts[1]
-    sequenceid = int(parts[2])
+    try:
+        assert len(parts) == 5
+    except AssertionError as e:
+        import logging
+        logging.error("Unexpected format of sequence_id_string: %r" % sequence_id_string)
+        raise
+    osetid = "-".join(parts[0:2])
+    appetid = "-".join(parts[2:4])
+    sequenceid = int(parts[4])
     return (osetid, appetid, sequenceid)
 
 def tarball_sequence_from_sequence_triplet(cursor, sequence_triplet):

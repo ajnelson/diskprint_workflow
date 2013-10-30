@@ -31,9 +31,9 @@ WHERE
 ;
     """, (args.tarball_path,))
     rows = [row for row in cursor]
-    if len(inrows) == 0:
+    if len(rows) == 0:
         raise Exception("Could not find any sequence ending with tarball path %r." % args.tarball_path)
-    elif len(inrows) > 1:
+    elif len(rows) > 1:
         raise Exception("Could not find a unique sequence ending with tarball path %r.  An initial, admittedly fragile, assumption of this script is now invalid." % args.tarball_path)
 
     #Format and output the sequence identifier
