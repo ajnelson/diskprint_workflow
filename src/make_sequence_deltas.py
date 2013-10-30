@@ -6,7 +6,7 @@ make_sequence_deltas.py: Aggregate differences in ouput of Fiwalk and RegXML Ext
 For usage instructions, see the argument parser description below, or run this script without arguments.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 import sys
 import os
@@ -15,6 +15,8 @@ import sqlite3
 import collections
 import logging
 import dfxml
+
+import differ_library
 
 """
 AJN: Sorry, I realized pretty late that the slice type was a required field. This hard-coded variable can be deleted after the slice type is queried.
@@ -30,25 +32,9 @@ def time_string_from_cell(cell):
     return None
         
 
-def etid_from_tarball_path(path, part):
-    """
-    Quick 'n' dirty.  This definitely deserves a database query instead.
-    #TODO
-    """
-    bn = os.path.basename(path)
-    parts = bn.split(".")[0].split("-")
-    assert len(parts) == 5
-    return parts[part]
-
-def appetid_from_tarball_path(path):
-    return etid_from_tarball_path(path, 2) + "-" + etid_from_tarball_path(path, 3)
-
-def osetid_from_tarball_path(path):
-    return etid_from_tarball_path(path, 0) + "-" + etid_from_tarball_path(path, 1)
-
 def sliceid_from_regxml_path(path):
     """
-    This is also a piece of fragile code.
+    This is a piece of fragile code.
     """
     assert path[0] == "/"  #Requires absolute path
     path_parts = path.split("/")
@@ -105,15 +91,21 @@ def main():
     """)
     outcur.execute("CREATE INDEX IF NOT EXISTS cellPath ON regdelta(cellpath);")
 
-    #Read in RegXML Extractor output directories
+    #Build list of RegXML Extractor output directories
     re_dir_sequence = []
-    with open(args.regxml_extractor_sequences, "r") as sequence_file:
-        for line in sequence_file:
-            cleaned_line = line.strip()
-            if not os.path.isdir(cleaned_line):
-                raise Exception("Path in input file is not directory: \"%s\"." % cleaned_line)
-            re_dir_sequence.append(cleaned_line)
-    logging.debug(re_dir_sequence)
+    (conn, cursor) = differ_library.db_conn_from_config_path(args.config)
+    tarball_abs_paths = differ_library.tarball_sequence_from_sequence_triplet(cursor, args.sequence_id)
+    logging.debug("tarball_abs_paths = %r" % tarball_abs_paths)
+    for tarball_abs_path in tarball_abs_paths:
+        re_abs_path = dwf_all_results_root + "/slice" + tarball_abs_path
+        if not os.path.isdir(re_abs_path):
+            raise Exception("Path in input file is not directory: %r." % re_abs_path)
+        #TODO Test for logged success at re_abs_path + ".status.log"
+        re_dir_sequence.append(re_abs_path)
+    if len(re_dir_sequence) == 0:
+        raise Exception("The sequence should have a non-zero number of RegXML Extractor directories.")
+
+    logging.debug("re_dir_sequence = %r" % re_dir_sequence)
 
     #Establish DFXML sequences
     #TODO
@@ -166,11 +158,12 @@ def main():
     local_hiveid_counter = 0
     for hive_fspath in hive_file_histories:
         local_hiveid_counter += 1
+        sequence_id_parts = differ_library.split_sequence_id(args.sequence_id)
         hiveid_record = {
           "hiveid": local_hiveid_counter,
           "hivepath": hive_fspath,
-          "appetid": appetid_from_tarball_path(args.representative_slice_tarball),
-          "osetid": osetid_from_tarball_path(args.representative_slice_tarball) 
+          "appetid": sequence_id_parts[1],
+          "osetid": sequence_id_part[0]
         }
         rx_make_database.insert_db(outcur, "hive", hiveid_record)
         outconn.commit()
@@ -282,9 +275,10 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create a SQLite database of file system and registry differences as found by RegXML Extractor.  Meant to be run on a single sequence of disk images processed by RegXML Extractor.")
-    parser.add_argument("representative_slice_tarball", help="Absolute path to the last tarball of this sequence.")
-    parser.add_argument("regxml_extractor_sequences", help="File listing absolute paths to RegXML Extractor output directories, in sequence order.")
+    parser.add_argument("dwf_all_results_root", help="Absolute path to the Diskprints workflow results root.")
+    parser.add_argument("sequence_id", help="Identifier for the target analysis sequence, formatted as osetid-appetid-sequenceid.")
     parser.add_argument("--with-script-path", help="Directory where installed rx_make_database.py, idifference.py and rdifference.py reside.")
+    parser.add_argument("--config", help="Configuration file", default="differ.cfg")
     parser.add_argument("-d", "--debug", action="store_true", help="Enable debug printing.")
     args = parser.parse_args()
 
