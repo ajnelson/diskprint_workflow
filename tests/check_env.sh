@@ -10,7 +10,7 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 top_srcdir="${script_dir}/.."
 
 source "${top_srcdir}/_env_extra.sh"
-source "${script_dir}/_check.sh"
+source "${top_srcdir}/src/_pick_pythons.sh"
 
 #Ensure we have Python 2 and 3 handy
 test -x $PYTHON2

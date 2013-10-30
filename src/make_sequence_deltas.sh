@@ -11,6 +11,9 @@ debug=1
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 $top_src_dir="${script_dir}/.."
 
+#Define Pythons
+source "${script_dir}/_pick_pythons.sh"
+
 final_tarball_path="$1"
 outdir="$2"
 sequence_res="${outdir/%make_sequence_deltas.sh/do_difference_workflow.sh}/sequence_res.txt"
@@ -22,7 +25,7 @@ else
 fi
 
 pushd "${outdir}" >/dev/null
-"${script_dir}/make_sequence_deltas.py" $maybe_debug --with-script-path="${top_src_dir}/local/share/regxml_extractor/python" "${final_tarball_path}" "${sequence_res}"
+"$PYTHON3" "${script_dir}/make_sequence_deltas.py" $maybe_debug --with-script-path="${top_src_dir}/local/share/regxml_extractor/python" "${final_tarball_path}" "${sequence_res}"
 status=$?
 popd >/dev/null
 exit $status

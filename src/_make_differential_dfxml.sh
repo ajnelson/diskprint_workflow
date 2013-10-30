@@ -16,9 +16,12 @@ fi
 set -e
 set -x
 
+#Define Pythons
+source "${script_dir}/_pick_pythons.sh"
+
 target_dfxml="${dwf_tarball_results_dirs[$target_dfxml_index]}/make_fiwalk_dfxml_alloc.sh/fiout.dfxml"
 current="${dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index_current]}/make_fiwalk_dfxml_alloc.sh/fiout.dfxml"
 
 pushd "${dwf_output_dir}" >/dev/null
-/opt/local/bin/python3.3 "$script_dir/idifference.py" --xml changes.dfxml "$target_dfxml" "$current"
+"$PYTHON3" "$script_dir/idifference.py" --xml changes.dfxml "$target_dfxml" "$current"
 popd >/dev/null
