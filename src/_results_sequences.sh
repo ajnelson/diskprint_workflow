@@ -44,6 +44,7 @@ if [ ! -r "$dwf_tarball_results_dirs_sequence_file" ]; then
   exit 1
 fi
 
+
 #Definitions
 #Note that the _previous and _next indces are kept at this sentinel value if there is no previous or next image in the sequence.
 declare -a dwf_tarball_results_dirs
@@ -80,7 +81,7 @@ while read x; do
     echo "Error: _results_sequences.sh: array index has grown to $INSANE_DIR_COUNT.  This is assumed to be an error.  Inspect the contents of '$dwf_tarball_results_dirs_sequence_file', or relax this check." >&2
     exit 1
   fi
-done <$dwf_tarball_results_dirs_sequence_file
+done <"$dwf_tarball_results_dirs_sequence_file"
 
 if [ $dwf_tarball_results_dirs_index_current -ge 0 ]; then
   dwf_tarball_results_dirs_index_previous=$(expr $dwf_tarball_results_dirs_index_current - 1);
