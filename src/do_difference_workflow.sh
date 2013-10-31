@@ -310,6 +310,7 @@ fi
 echo "$0: Debug: \$dwf_sequence_id = $dwf_sequence_id" >&2
 export dwf_sequence_id
 outdir_per_sequence="${results_root_path}/sequence/${dwf_sequence_id}"
+export dwf_sequential_slice_outdir="${outdir_per_sequence}/sequential_slice"
 
 #Change into the output directory
 pushd "${script_outdir}" >/dev/null
@@ -331,7 +332,7 @@ logandrunscript () {
   #Function arguments:
   # $1: Image tarball absolute path (fimage)
   # $2: Script basename (fscript)
-  # $3: Branch from the results root directory (slice|sequence)
+  # $3: Branch from the results root directory (slice|sequence|sequential_slice)
 
   fimage="$1"
   fscript="$2"
@@ -341,6 +342,8 @@ logandrunscript () {
     foutdir="${dwf_all_results_root}/slice${fimage}/${fscript_basename}"
   elif [ "$slice_or_sequence" == "sequence" ]; then
     foutdir="${outdir_per_sequence}/${fscript_basename}"
+  elif [ "$slice_or_sequence" == "sequential_slice" ]; then
+    foutdir="${dwf_sequential_slice_outdir}${fimage}/${fscript_basename}"
   else
     "$0: Error: logandrunscript called without a proper slice-or-sequence argument." >&2
     exit 1
@@ -413,8 +416,13 @@ count_script_errors() {
   elif [ "$slice_or_sequence" == "sequence" ]; then
     statlog="${outdir_per_sequence}/${target_script}.status.log"
     _tally
+  elif [ "$slice_or_sequence" == "sequential_slice" ]; then
+    while read tarball_abs_path; do
+      statlog="${dwf_sequential_slice_outdir}${tarball_abs_path}/${target_script}.status.log"
+      _tally
+    done <"$dwf_tarball_results_dirs_sequence_file"
   else
-    echo "$0: Error: count_script_errors called with bad first argument (should be 'slice' or 'sequence'): $slice_or_sequence." >&2
+    echo "$0: Error: count_script_errors called with bad first argument (should be 'slice', 'sequence', or 'sequential_slice'): $slice_or_sequence." >&2
     exit 1
   fi
   echo $error_tally
@@ -504,13 +512,13 @@ any_errors=$(count_script_errors slice "validate_fiwalk_dfxml_all.sh")
 #Create differential DFXML output directories after all Fiwalk output is successfully done
 $my_inorder_parallel \
   echo "Note: Starting differential DFXML processing, vs. baseline, for \"{}\"." \>\&2 \; \
-  logandrunscript {} "$script_dirname/make_differential_dfxml_baseline.sh" slice \; \
+  logandrunscript {} "$script_dirname/make_differential_dfxml_baseline.sh" sequential_slice \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors slice "make_differential_dfxml_baseline.sh")
 
 $my_inorder_parallel \
   echo "Note: Starting differential DFXML processing, vs. previous image, for \"{}\"." \>\&2 \; \
-  logandrunscript {} "$script_dirname/make_differential_dfxml_prior.sh" slice \; \
+  logandrunscript {} "$script_dirname/make_differential_dfxml_prior.sh" sequential_slice \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors slice "make_differential_dfxml_prior.sh")
 
