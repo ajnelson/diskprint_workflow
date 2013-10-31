@@ -415,7 +415,7 @@ export dwf_tarball_results_dirs_sequence_file="$outdir_per_tarball/make_sequence
 
 #Create E01s
 $my_inorder_parallel \
-  echo "Note: Starting E01 processing for \"{}\"." \>&2 \; \
+  echo "Note: Starting E01 processing for \"{}\"." \>\&2 \; \
   logandrunscript {} "$script_dirname/invoke_vmdk_to_E01.sh" \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
 
@@ -430,7 +430,7 @@ fi
 
 #(Experimental) Create Fiwalk DFXML, including unallocated content.
 $my_inorder_parallel \
-  echo "Note: Starting Fiwalk all-files processing for \"$sequence_image\"." \>&2 \; \
+  echo "Note: Starting Fiwalk all-files processing for \"$sequence_image\"." \>\&2 \; \
   logandrunscript {} "$script_dirname/make_fiwalk_dfxml_all.sh" \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "make_fiwalk_dfxml_all.sh")
@@ -440,7 +440,7 @@ any_errors=$(count_script_errors "make_fiwalk_dfxml_all.sh")
 
 #Create Fiwalk DFXML output directories after all E01 output's successfully done
 $my_inorder_parallel \
-  echo "Note: Starting Fiwalk allocated-only processing for \"{}\"." \>&2 \; \
+  echo "Note: Starting Fiwalk allocated-only processing for \"{}\"." \>\&2 \; \
   logandrunscript {} "$script_dirname/make_fiwalk_dfxml_alloc.sh" \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "make_fiwalk_dfxml_alloc.sh")
@@ -454,13 +454,13 @@ fi
 
 #Try validating Fiwalk output with DFXML schema
 $my_inorder_parallel \
-  echo "Note: Validating Fiwalk allocated-only results from \"{}\"." \>&2 \; \
+  echo "Note: Validating Fiwalk allocated-only results from \"{}\"." \>\&2 \; \
   logandrunscript {} "$script_dirname/validate_fiwalk_dfxml_alloc.sh" \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "validate_fiwalk_dfxml_alloc.sh")
 
 $my_inorder_parallel \
-  echo "Note: Validating Fiwalk all-files results from \"{}\"." \>&2 \; \
+  echo "Note: Validating Fiwalk all-files results from \"{}\"." \>\&2 \; \
   logandrunscript {} "$script_dirname/validate_fiwalk_dfxml_all.sh" \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "validate_fiwalk_dfxml_all.sh")
@@ -470,13 +470,13 @@ any_errors=$(count_script_errors "validate_fiwalk_dfxml_all.sh")
 
 #Create differential DFXML output directories after all Fiwalk output is successfully done
 $my_inorder_parallel \
-  echo "Note: Starting differential DFXML processing, vs. baseline, for \"{}\"." \>&2 \; \
+  echo "Note: Starting differential DFXML processing, vs. baseline, for \"{}\"." \>\&2 \; \
   logandrunscript {} "$script_dirname/make_differential_dfxml_baseline.sh" \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "make_differential_dfxml_baseline.sh")
 
 $my_inorder_parallel \
-  echo "Note: Starting differential DFXML processing, vs. previous image, for \"{}\"." \>&2 \; \
+  echo "Note: Starting differential DFXML processing, vs. previous image, for \"{}\"." \>\&2 \; \
   logandrunscript {} "$script_dirname/make_differential_dfxml_prior.sh" \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "make_differential_dfxml_prior.sh")
@@ -487,7 +487,7 @@ any_errors=$(count_script_errors "make_differential_dfxml_prior.sh")
 #Create RE output directories after all E01 output's successfully done.
 #(Creating per-image RE immediately after creating the E01 (and similarly with Fiwalk) means basically trying to integrate Make again: Suddenly, there's a piecemeal, per-tarball dependency graph that has to be defined. A Bash array could probably do it, but recovering from failure becomes tedious right-quick.)
 $my_inorder_parallel \
-  echo "Note: Starting RegXML Extractor processing for \"{}\"." \>&2 \; \
+  echo "Note: Starting RegXML Extractor processing for \"{}\"." \>\&2 \; \
   logandrunscript {} "$script_dirname/invoke_regxml_extractor.sh" \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "invoke_regxml_extractor.sh")
@@ -501,7 +501,7 @@ fi
 
 #Insert Perl module results; non-critical for now.
 $my_inorder_parallel \
-  echo "Note: Starting Perl modules on RegXML Extractor hives for \"{}\"." \>&2 \; \
+  echo "Note: Starting Perl modules on RegXML Extractor hives for \"{}\"." \>\&2 \; \
   logandrunscript {} "$script_dirname/run_reg_perl.sh" \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "run_reg_perl.sh")
