@@ -164,7 +164,7 @@ find_errors() {
   #Refs for reading paths with spaces in the name:
   #* http://stackoverflow.com/a/11366230/1207160
   #* http://www.cyberciti.biz/tips/handling-filenames-with-spaces-in-bash.html
-  find "$results_root_path" -name '*.sh.status.log' -print0 | \
+  find "$dwf_all_results_root" -name '*.sh.status.log' -print0 | \
     while read -d $'\0' x; do
       if [ $(grep -v '0' "$x" | wc -l) -gt 0 ]; then
         xbn="$(basename "$x")"
@@ -241,7 +241,7 @@ fi
 #The rest of this script is single-slice/single-sequence mode.
 
 #Ensure we have an output directory
-outdir_per_tarball="${results_root_path}/slice/${final_tarball_path}"
+outdir_per_tarball="${dwf_all_results_root}/slice/${final_tarball_path}"
 script_outdir="$outdir_per_tarball/$script_basename"
 
 #Set up logging
@@ -338,7 +338,7 @@ logandrunscript () {
   slice_or_sequence="$3"
   fscript_basename="$(basename $fscript)"
   if [ "$slice_or_sequence" == "slice" ]; then
-    foutdir="${results_root_path}/slice${fimage}/${fscript_basename}"
+    foutdir="${dwf_all_results_root}/slice${fimage}/${fscript_basename}"
   elif [ "$slice_or_sequence" == "sequence" ]; then
     foutdir="${outdir_per_sequence}/${fscript_basename}"
   else
@@ -356,7 +356,7 @@ logandrunscript () {
   printf "\t\$foutdir=$foutdir\n" >&2
   printf "\t(Global)\n" >&2
   printf "\t\$@=$@" >&2; printf "\n" >&2 #$@'s null terminated
-  printf "\t\$results_root_path=$results_root_path\n" >&2
+  printf "\t\$dwf_all_results_root=$dwf_all_results_root\n" >&2
   printf "\t\$outdir_per_tarball=$outdir_per_tarball\n" >&2
 
   if [ -f "$foutdir.status.log" ] && [ "x$(cat "$foutdir.status.log")" == "x0" ]; then
@@ -403,11 +403,11 @@ count_script_errors() {
   if [ "$slice_or_sequence" == "slice" ]; then
     if [ -z "$3" ]; then
       while read tarball_abs_path; do
-        statlog="${results_root_path}/slice${tarball_abs_path}/${target_script}.status.log"
+        statlog="${dwf_all_results_root}/slice${tarball_abs_path}/${target_script}.status.log"
         _tally
       done <"$dwf_tarball_results_dirs_sequence_file"
     else
-      statlog="${target_result}/${target_script}.status.log"
+      statlog="${target_result_base}/${target_script}.status.log"
       _tally
     fi
   elif [ "$slice_or_sequence" == "sequence" ]; then
@@ -430,7 +430,7 @@ if [ $any_errors -gt 0 ]; then
   echo "Note: Something went wrong checking whether this was a sequence end.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   exit 1
 fi
-if [ ! -r "${results_root_path}/slice${final_tarball_path}/check_tarball_is_sequence_end.sh/YES" ]; then
+if [ ! -r "${dwf_all_results_root}/slice${final_tarball_path}/check_tarball_is_sequence_end.sh/YES" ]; then
   echo "Note: This tarball does not appear to be a sequence end.  Quitting.  The workflow should be called on the end of a slice sequence (i.e. a slice that precedes no other slice)." >&2
   exit 0
 fi
