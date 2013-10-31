@@ -1,1 +1,5 @@
 differ.cfg
+deps/*.git
+__pycache__
+*.pyc
+local

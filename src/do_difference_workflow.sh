@@ -4,6 +4,10 @@
 
 #Output for this script is generated as the other output, just in the final tarball's output directory.
 
+#Include PATH extensions
+this_script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
+source "$this_script_dir/../_env_extra.sh"
+
 #Propagate SIGINT to subshells: http://stackoverflow.com/a/8366378/1207160
 trap "kill 0" SIGINT SIGTERM
 
@@ -244,14 +248,12 @@ script_outdir="$outdir_per_tarball/$script_basename"
 mkdir -p "${script_outdir}" || exit 1
 script_out_log="${script_outdir}.out.log"
 script_err_log="${script_outdir}.err.log"
-script_total_log="${script_outdir}.log"
 script_status_log="${script_outdir}.status.log"
 
 #Clear old logs
 rm -f \
   "$script_out_log" \
   "$script_err_log" \
-  "$script_total_log" \
   "$script_status_log"
 
 #Log the script exiting from here forward
@@ -272,9 +274,8 @@ trap 'exit_trap ${LINENO} $?' EXIT
 
 #Log stdout and stderr from this point on
 #Light Bash docs on redirecting current script's std*: http://tldp.org/LDP/abs/html/x17891.html
-#Tee piping is an extension of this Stack Overflow answer: http://stackoverflow.com/a/3403786/1207160
 if [ $report_pidlog -eq 1 ]; then
-  echo "Debug: $script_basename: Stdout and stderr of process $$ redirecting to $script_total_log." >&2
+  echo "Debug: $script_basename: Stdout and stderr of process $$ redirecting to ${script_outdir}.{out,err}.log." >&2
 fi
 #Maybe preserve stdin and stdout
 if [ $quiet -eq 1 ]; then
@@ -284,9 +285,10 @@ else
   exec 6>&1
   exec 7>&2
 fi
-#Log stderr and stdout to separated and in-order logs
-exec 1> >(tee -a "$script_total_log" | tee -a "$script_out_log" >&6)
-exec 2> >(tee -a "$script_total_log" | tee -a "$script_err_log" >&7)
+#Log stderr and stdout to separated logs
+#(In-order logs as well seemed to be problematic)
+exec 1> >(tee -a "$script_out_log" >&6)
+exec 2> >(tee -a "$script_err_log" >&7)
 
 if [ ! -e "$final_tarball_path" ]; then
   echo "Error: $script_basename: Input tarball does not exist." >&2
@@ -400,6 +402,7 @@ if [ ! -r "${results_root_path}${final_tarball_path}/check_tarball_is_sequence_e
   exit 0
 fi
 
+
 #Create the sequence list.
 logandrunscript "$final_tarball_path" "$script_dirname/make_sequence_list.sh"
 any_errors=$(count_script_errors "make_sequence_list.sh")
@@ -410,11 +413,12 @@ fi
 #(This next variable is hard-coded between here and the make_sequence_list.sh script.)
 export dwf_tarball_results_dirs_sequence_file="$outdir_per_tarball/make_sequence_list.sh/sequence_tarballs.txt"
 
-#Create E01s and RE output directories
+#Create E01s
 $my_inorder_parallel \
   echo "Note: Starting E01 processing for \"{}\"." \>&2 \; \
   logandrunscript {} "$script_dirname/invoke_vmdk_to_E01.sh" \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
+
 any_errors=$(count_script_errors "invoke_vmdk_to_E01.sh")
 
 #Bail out if any errors were found in the loop.
@@ -423,12 +427,23 @@ if [ $any_errors -gt 0 ]; then
   exit 1
 fi
 
+
+#(Experimental) Create Fiwalk DFXML, including unallocated content.
+$my_inorder_parallel \
+  echo "Note: Starting Fiwalk all-files processing for \"$sequence_image\"." \>&2 \; \
+  logandrunscript {} "$script_dirname/make_fiwalk_dfxml_all.sh" \; \
+  :::: "$dwf_tarball_results_dirs_sequence_file"
+any_errors=$(count_script_errors "make_fiwalk_dfxml_all.sh")
+
+#Tolerate errors in this loop.
+
+
 #Create Fiwalk DFXML output directories after all E01 output's successfully done
 $my_inorder_parallel \
-  echo "Note: Starting Fiwalk processing for \"{}\"." \>&2 \; \
-  logandrunscript {} "$script_dirname/make_fiwalk_dfxml.sh" \; \
+  echo "Note: Starting Fiwalk allocated-only processing for \"{}\"." \>&2 \; \
+  logandrunscript {} "$script_dirname/make_fiwalk_dfxml_alloc.sh" \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "make_fiwalk_dfxml.sh")
+any_errors=$(count_script_errors "make_fiwalk_dfxml_alloc.sh")
 
 #Bail out if any errors were found in the loop.
 if [ $any_errors -gt 0 ]; then
@@ -436,23 +451,38 @@ if [ $any_errors -gt 0 ]; then
   exit 1
 fi
 
+
 #Try validating Fiwalk output with DFXML schema
 $my_inorder_parallel \
-  echo "Note: Validating Fiwalk results from \"{}\"." \>&2 \; \
-  logandrunscript {} "$script_dirname/validate_fiwalk_dfxml.sh" \; \
+  echo "Note: Validating Fiwalk allocated-only results from \"{}\"." \>&2 \; \
+  logandrunscript {} "$script_dirname/validate_fiwalk_dfxml_alloc.sh" \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "validate_fiwalk_dfxml.sh")
+any_errors=$(count_script_errors "validate_fiwalk_dfxml_alloc.sh")
+
+$my_inorder_parallel \
+  echo "Note: Validating Fiwalk all-files results from \"{}\"." \>&2 \; \
+  logandrunscript {} "$script_dirname/validate_fiwalk_dfxml_all.sh" \; \
+  :::: "$dwf_tarball_results_dirs_sequence_file"
+any_errors=$(count_script_errors "validate_fiwalk_dfxml_all.sh")
 
 #Tolerate errors with DFXML validation for now.
 
+
 #Create differential DFXML output directories after all Fiwalk output is successfully done
 $my_inorder_parallel \
-  echo "Note: Starting differential DFXML processing for \"{}\"." \>&2 \; \
-  logandrunscript {} "$script_dirname/make_differential_dfxml.sh" \; \
+  echo "Note: Starting differential DFXML processing, vs. baseline, for \"{}\"." \>&2 \; \
+  logandrunscript {} "$script_dirname/make_differential_dfxml_baseline.sh" \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors "make_differential_dfxml.sh")
+any_errors=$(count_script_errors "make_differential_dfxml_baseline.sh")
+
+$my_inorder_parallel \
+  echo "Note: Starting differential DFXML processing, vs. previous image, for \"{}\"." \>&2 \; \
+  logandrunscript {} "$script_dirname/make_differential_dfxml_prior.sh" \; \
+  :::: "$dwf_tarball_results_dirs_sequence_file"
+any_errors=$(count_script_errors "make_differential_dfxml_prior.sh")
 
 #Tolerate errors with differential DFXML processing for now.
+
 
 #Create RE output directories after all E01 output's successfully done.
 #(Creating per-image RE immediately after creating the E01 (and similarly with Fiwalk) means basically trying to integrate Make again: Suddenly, there's a piecemeal, per-tarball dependency graph that has to be defined. A Bash array could probably do it, but recovering from failure becomes tedious right-quick.)
@@ -468,6 +498,7 @@ if [ $any_errors -gt 0 ]; then
   exit 1
 fi
 
+
 #Insert Perl module results; non-critical for now.
 $my_inorder_parallel \
   echo "Note: Starting Perl modules on RegXML Extractor hives for \"{}\"." \>&2 \; \
@@ -478,12 +509,15 @@ if [ $any_errors -gt 0 ]; then
   echo "Note: Encountered $any_errors errors while generating Perl results.  Continuing; the Perl modules are experimental for purposes of the differencing workflow." >&2
 fi
 
+
 #Translate the successful RE outputs into a sequence
 rm -f "${script_outdir}/sequence_res.txt"
 while read sequence_image; do
   echo ${results_root_path}${sequence_image}/invoke_regxml_extractor.sh>>"${script_outdir}/sequence_res.txt"
 done<"$dwf_tarball_results_dirs_sequence_file"
 
+
+#Create the deltas dataset for the whole sequence
 logandrunscript "$final_tarball_path" "$script_dirname/make_sequence_deltas.sh"
 any_errors=$(count_script_errors "make_sequence_deltas.sh")
 if [ $any_errors -gt 0 ]; then
@@ -491,6 +525,8 @@ if [ $any_errors -gt 0 ]; then
   exit 1
 fi
 
+
+#Export the results to Postgres
 logandrunscript "$final_tarball_path" "$script_dirname/export_sqlite_to_postgres.sh"
 any_errors=$(count_script_errors "export_sqlite_to_postgres.sh")
 if [ $any_errors -gt 0 ]; then
@@ -498,5 +534,6 @@ if [ $any_errors -gt 0 ]; then
   echo "Warning: At this point you probably need to delete some records from Postgres.  See the error log for export_sqlite_to_postgres.sh, there are some DELETE statements pre-built." >&2
   exit 1
 fi
+
 
 popd >/dev/null

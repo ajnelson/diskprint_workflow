@@ -1,5 +1,5 @@
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 import os
 import sys
@@ -51,6 +51,11 @@ if __name__ == "__main__":
 
     if args.check:
         (conn,cursor) = db_conn_from_config_path(args.config)
+
         cursor.execute("SELECT COUNT(*) AS tally FROM diskprint.slice;")
         inrows = [row for row in cursor]
         logging.debug("Note: The slice table currently has %r entries." % inrows[0]["tally"])
+
+        cursor.execute("SELECT COUNT(*) AS tally FROM diskprint.regdelta;")
+        inrows = [row for row in cursor]
+        logging.debug("Note: The regdelta table currently has %r entries." % inrows[0]["tally"])
