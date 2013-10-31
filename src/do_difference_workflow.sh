@@ -454,13 +454,13 @@ fi
 
 #Try validating Fiwalk output with DFXML schema
 while read sequence_image; do
-  echo "Note: Validating Fiwalk results from \"$sequence_image\"." >&2
+  echo "Note: Validating Fiwalk allocated-only results from \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/validate_fiwalk_dfxml_alloc.sh"
 done<"$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "validate_fiwalk_dfxml_alloc.sh")
 
 while read sequence_image; do
-  echo "Note: Validating Fiwalk results from \"$sequence_image\"." >&2
+  echo "Note: Validating Fiwalk all-files results from \"$sequence_image\"." >&2
   logandrunscript "$sequence_image" "$script_dirname/validate_fiwalk_dfxml_all.sh"
 done<"$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors "validate_fiwalk_dfxml_all.sh")
