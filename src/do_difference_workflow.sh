@@ -240,15 +240,32 @@ fi
 
 #The rest of this script is single-slice/single-sequence mode.
 
+#TODO HACK
+#This method of selecting a sequence ID is not future-proof.  It is possible to define multiple sequences that end with the same tarball.  The correct method is to rewrite the workflow to operate on sequence IDs instead of tarball paths, as the tarball paths are just proxies for sequences anyway.
+#However, it requires an attractive-for-now minimal amount of code re-writing and results re-pathing.
+#--AJN 2013-10-30
+#Pick Pythons
+source "${this_script_dir}/_pick_pythons.sh"
+dwf_sequence_id="$("$PYTHON3" "${this_script_dir}/tarball_path_to_sequence_id.py" "$final_tarball_path")"
+rc=$?
+if [ $rc -ne 0 ]; then
+  echo "$0: Error: tarball_path_to_sequence_id.py raised an error." >&2
+  exit $rc
+fi
+echo "$0: Debug: \$dwf_sequence_id = $dwf_sequence_id" >&2
+export dwf_sequence_id
+outdir_per_sequence="${results_root_path}/sequence/${dwf_sequence_id}"
+export dwf_sequential_slice_outdir="${outdir_per_sequence}/sequential_slice"
+
 #Ensure we have an output directory
 outdir_per_tarball="${dwf_all_results_root}/slice/${final_tarball_path}"
-script_outdir="$outdir_per_tarball/$script_basename"
+workflow_script_outdir="$outdir_per_sequence/$script_basename"
 
 #Set up logging
-mkdir -p "${script_outdir}" || exit 1
-script_out_log="${script_outdir}.out.log"
-script_err_log="${script_outdir}.err.log"
-script_status_log="${script_outdir}.status.log"
+mkdir -p "${workflow_script_outdir}" || exit 1
+script_out_log="${workflow_script_outdir}.out.log"
+script_err_log="${workflow_script_outdir}.err.log"
+script_status_log="${workflow_script_outdir}.status.log"
 
 #Clear old logs
 rm -f \
@@ -275,7 +292,7 @@ trap 'exit_trap ${LINENO} $?' EXIT
 #Log stdout and stderr from this point on
 #Light Bash docs on redirecting current script's std*: http://tldp.org/LDP/abs/html/x17891.html
 if [ $report_pidlog -eq 1 ]; then
-  echo "Debug: $script_basename: Stdout and stderr of process $$ redirecting to ${script_outdir}.{out,err}.log." >&2
+  echo "Debug: $script_basename: Stdout and stderr of process $$ redirecting to ${workflow_script_outdir}.{out,err}.log." >&2
 fi
 #Maybe preserve stdin and stdout
 if [ $quiet -eq 1 ]; then
@@ -295,34 +312,17 @@ if [ ! -e "$final_tarball_path" ]; then
   exit 1
 fi
 
-#TODO HACK
-#This method of selecting a sequence ID is not future-proof.  It is possible to define multiple sequences that end with the same tarball.  The correct method is to rewrite the workflow to operate on sequence IDs instead of tarball paths, as the tarball paths are just proxies for sequences anyway.
-#However, it requires an attractive-for-now minimal amount of code re-writing and results re-pathing.
-#--AJN 2013-10-30
-#Pick Pythons
-source "${this_script_dir}/_pick_pythons.sh"
-dwf_sequence_id="$("$PYTHON3" "${this_script_dir}/tarball_path_to_sequence_id.py" "$final_tarball_path")"
-rc=$?
-if [ $rc -ne 0 ]; then
-  echo "$0: Error: tarball_path_to_sequence_id.py raised an error." >&2
-  exit $rc
-fi
-echo "$0: Debug: \$dwf_sequence_id = $dwf_sequence_id" >&2
-export dwf_sequence_id
-outdir_per_sequence="${results_root_path}/sequence/${dwf_sequence_id}"
-export dwf_sequential_slice_outdir="${outdir_per_sequence}/sequential_slice"
-
 #Change into the output directory
-pushd "${script_outdir}" >/dev/null
+pushd "${workflow_script_outdir}" >/dev/null
 
 #Trigger exporting results to database by removing last export's output, if present
 if [ $re_export -eq 1 ]; then
-  if [ $(find "$outdir_per_tarball" -type d -name 'export_sqlite_to_postgres.sh' | wc -l) -gt 0 ]; then
+  if [ $(find "$outdir_per_sequence" -type d -name 'export_sqlite_to_postgres.sh' | wc -l) -gt 0 ]; then
     echo "Debug: Removing these directories and files." >&2
-    find "$outdir_per_tarball" -type d -name 'export_sqlite_to_postgres.sh' -print0 | xargs -0 ls -d
-    find "$outdir_per_tarball" -type d -name 'export_sqlite_to_postgres.sh' -print0 | xargs -0 rm -r
-    find "$outdir_per_tarball" -type f -name 'export_sqlite_to_postgres.sh.*.log' -print0 | xargs -0 ls
-    find "$outdir_per_tarball" -type f -name 'export_sqlite_to_postgres.sh.*.log' -print0 | xargs -0 rm
+    find "$outdir_per_sequence" -type d -name 'export_sqlite_to_postgres.sh' -print0 | xargs -0 ls -d
+    find "$outdir_per_sequence" -type d -name 'export_sqlite_to_postgres.sh' -print0 | xargs -0 rm -r
+    find "$outdir_per_sequence" -type f -name 'export_sqlite_to_postgres.sh.*.log' -print0 | xargs -0 ls
+    find "$outdir_per_sequence" -type f -name 'export_sqlite_to_postgres.sh.*.log' -print0 | xargs -0 rm
   fi
 fi
 
@@ -361,6 +361,7 @@ logandrunscript () {
   printf "\t\$@=$@" >&2; printf "\n" >&2 #$@'s null terminated
   printf "\t\$dwf_all_results_root=$dwf_all_results_root\n" >&2
   printf "\t\$outdir_per_tarball=$outdir_per_tarball\n" >&2
+  printf "\t\$outdir_per_sequence=$outdir_per_sequence\n" >&2
 
   if [ -f "$foutdir.status.log" ] && [ "x$(cat "$foutdir.status.log")" == "x0" ]; then
     echo "Note: Using previously-created output in \"$foutdir\"." >&2
