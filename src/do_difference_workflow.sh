@@ -359,6 +359,19 @@ logandrunscript () {
 #H/t to Malcolm Cook: http://lists.gnu.org/archive/html/parallel/2012-01/msg00025.html
 export -f logandrunscript
 
+#Clarification on return vs exit: http://stackoverflow.com/a/18663184
+logged_success() {
+  statlog="$1"
+  if [ ! -r "$statlog" ]; then
+    return 5 #File not found/readable
+  fi
+  logged_status="$(head -n1 "$statlog")"
+  if [ "x$logged_status" != "x0" ]; then
+    return 0
+  fi
+  return 1
+}
+
 count_script_errors() {
   #Parameters:
   # 1) Target script, for checking exit statuses
@@ -366,23 +379,21 @@ count_script_errors() {
   error_tally=0
   target_script="$1"
   target_result="$2"
-  _tally() {
-    statlog="${dwf_all_results_root}${fimage}/${target_script}.status.log"
-    if [ -r "$statlog" ]; then
-      logged_status="$(head -n1 "$statlog")"
-      if [ "x$logged_status" != "x0" ]; then
+  #echo "$0: Debug: \$target_script = $target_script" >&2
+  #echo "$0: Debug: \$target_result = $target_result" >&2
+  #echo "$0: Debug: \$# = $#" >&2
+  if [ $# -lt 2 ] ; then
+    while read fimage; do
+      statlog="${dwf_all_results_root}${fimage}/${target_script}.status.log"
+      if logged_success "$statlog" ; then
         error_tally=$(($error_tally+1))
       fi
-    fi
-  }
-  if [ -z "$2" ]; then
-    while read fimage; do
-      _tally
     done <"$dwf_tarball_results_dirs_sequence_file"
   else
-    echo "$target_result" | while read fimage; do
-      _tally
-    done
+    statlog="${dwf_all_results_root}${target_result}/${target_script}.status.log"
+    if logged_success "$statlog" ; then
+      error_tally=$(($error_tally+1))
+    fi
   fi
   echo $error_tally
 }
