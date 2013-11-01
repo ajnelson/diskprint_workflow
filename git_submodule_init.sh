@@ -9,7 +9,7 @@ DFXMLSCHEMA_COMMIT=b4b240c2126f395274ab20baf004a639e8d92e6f
 DFXML_REPO=https://github.com/ajnelson/dfxml.git
 DFXML_COMMIT=cc106a6aa1af760da510b153321f5612f5d51bbe
 RE_REPO=https://github.com/ajnelson/regxml_extractor.git
-RE_COMMIT=5021b3932fc39cca444fd1addede2ee6c6ddfde5
+RE_COMMIT=03c59cac7030bb9ff20356493222440189b35348
 
 #Fetch Git repositories with git-submodule...only, in SVN.
 
