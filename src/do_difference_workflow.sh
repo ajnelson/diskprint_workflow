@@ -166,7 +166,7 @@ find_errors() {
   #* http://www.cyberciti.biz/tips/handling-filenames-with-spaces-in-bash.html
   find "$dwf_all_results_root" -name '*.sh.status.log' -print0 | \
     while read -d $'\0' x; do
-      if [ $(grep -v '0' "$x" | wc -l) -gt 0 ]; then
+      if [ $(egrep -v '^0$' "$x" | wc -l) -gt 0 ]; then
         xbn="$(basename "$x")"
         xdn="$(dirname "$x")"
         if [ -z "$1" ]; then
