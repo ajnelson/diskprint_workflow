@@ -153,7 +153,7 @@ export DIFFER_CONFIG="$(my_readlink $DIFFER_CONFIG)"
 find_errors() {
   find "$results_root_path" -name '*.sh.status.log' | \
     while read x; do
-      if [ $(grep -v '0' "$x" | wc -l) -gt 0 ]; then
+      if [ $(egrep -v '^0$' "$x" | wc -l) -gt 0 ]; then
         xbn=$(basename "$x")
         xdn="$(dirname "$x")"
         find "$xdn" -name "${xbn/%.status.log/}*" | sort
