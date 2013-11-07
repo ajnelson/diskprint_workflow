@@ -19,7 +19,7 @@ Before your first run, you will need to run these commands to guarantee your env
     deps/augment_shell.sh ; source ~/.bashrc
     ./bootstrap.sh
 
-Note only one command needs to be run with `sudo`.  Everything else that requires compilation and installation is installed into your home directory (under `~/local`).
+Note only one command needs to be run with `sudo`.  Everything else that requires compilation and installation is installed into this directory (under `./local`).
 
 If `bootstrap.sh` fails, it should provide you sufficient instructions to fix things up so you can run it to completion.  If bootstrap worked, running it again will cause no changes.
 
