@@ -9,6 +9,7 @@ set -x
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 top_srcdir="${script_dir}/.."
 
+source "${top_srcdir}/_env_extra.sh"
 source "${script_dir}/_check.sh"
 
 #Ensure we have Python 2 and 3 handy

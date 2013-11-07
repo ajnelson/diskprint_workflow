@@ -2,7 +2,7 @@
 
 # When this script runs successfully, it sets up the following:
 #
-#  * The current user will be able to compile and link tools without administrator rights - tools will be installed under the prefix ~/local.
+#  * The current user will be able to compile and link tools without administrator rights - tools will be installed under the prefix ./local.
 #  * The system will have several required pacakges installed, including compiler tools (autotools), Ocaml, and Python 3.
 #  * The current user will be able to run EWF programs, AFF programs, TSK programs, fiwalk, and hivexml
 #  * Specific versions of software tracked by Git will be built and installed.  If this script is updated, the Git-tracked software will also be updated and re-built as necessary.
@@ -15,6 +15,8 @@
 
 set -e
 set -x
+
+source _env_extra.sh
 
 source git_submodule_init.sh
 
@@ -95,22 +97,27 @@ if [ $RE_should_build -eq 1 -o ! -r deps/regxml_extractor.git/deps/sleuthkit/REA
 fi
 
 #Build libaff
-if [ "x$(which affconvert)" == "x" ]; then
+if [ "x$(which affconvert)" == "x" -o \
+  $(which affconvert | grep "$DWF_BUILD_PREFIX" | wc -l) -ne 1 \
+]; then
   AFFLIB_should_build=1
 fi
 if [ $AFFLIB_should_build -eq 1 ]; then
   pushd deps/AFFLIBv3.git >/dev/null
   ./bootstrap.sh
-  ./configure --prefix=$HOME/local
+  ./configure --prefix="$DWF_BUILD_PREFIX"
   make -j || make #If parallel make fails, re-run make to see what the error was
   make install
   popd >/dev/null
 fi
 
-#Ensure Fiwalk (and thus RegXML Extractor) are built:
+#Ensure Fiwalk (and RegXML Extractor) are built:
 # (1) With AFF and EWF support
 # (2) Up-to-date
 if [ "x$(which fiwalk)" == "x" -o \
+  "x$(which regxml_extractor.sh)" == "x" -o \
+  $(which fiwalk | grep "$DWF_BUILD_PREFIX" | wc -l) -ne 1 -o \
+  $(which regxml_extractor.sh | grep "$DWF_BUILD_PREFIX" | wc -l) -ne 1 -o \
   $(fiwalk | grep 'NO AFFLIB SUPPORT' | wc -l) -gt 0 -o \
   $(fiwalk | grep 'NO LIBEWF SUPPORT' | wc -l) -gt 0 \
 ]; then
@@ -120,7 +127,8 @@ fi
 if [ $RE_should_build -eq 1 ]; then
   pushd deps/regxml_extractor.git >/dev/null
   git submodule sync
-  deps/build_submodules.sh local
+  RE_HIVEX_CONFIGURE_EXTRA_FLAGS="LDFLAGS=-L/opt/local/lib CPPFLAGS=-I/opt/local/include" \
+    deps/build_submodules.sh local "$DWF_BUILD_PREFIX"
   echo "Note: Checking that afflib is linked into Fiwalk..." >&2
   test $(fiwalk | grep 'NO AFFLIB SUPPORT' | wc -l) -eq 0
   echo "Afflib link is good." >&2
@@ -128,7 +136,7 @@ if [ $RE_should_build -eq 1 ]; then
   test $(fiwalk | grep 'NO LIBEWF SUPPORT' | wc -l) -eq 0
   echo "Libewf link is good." >&2
   ./bootstrap.sh
-  ./configure --prefix=$HOME/local
+  ./configure --prefix="$DWF_BUILD_PREFIX"
   make 
   make install
   popd >/dev/null

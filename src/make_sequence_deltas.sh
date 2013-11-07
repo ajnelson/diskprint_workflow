@@ -3,12 +3,13 @@
 #Assumes a few directories are present:
 # * $outdir/../do_difference_workflow.sh
 # * All the output directories for RegXML Extractor listed in $imageoutroot/make_sequence_list.sh/sequence_tarballs.sh
-# * ~/local/share/regxml_extractor/python - the installed directory of RegXML Extractor
+# * $top_src_dir/local/share/regxml_extractor/python - the installed directory of RegXML Extractor
 
 debug=1
 
 #One-liner c/o http://stackoverflow.com/a/246128/1207160
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
+top_src_dir="${script_dir}/.."
 
 final_tarball_path="$1"
 outdir="$2"
@@ -21,7 +22,7 @@ else
 fi
 
 pushd "${outdir}" >/dev/null
-"${script_dir}/make_sequence_deltas.py" $maybe_debug --with-script-path="$HOME/local/share/regxml_extractor/python" "${final_tarball_path}" "${sequence_res}"
+"${script_dir}/make_sequence_deltas.py" $maybe_debug --with-script-path="${top_src_dir}/local/share/regxml_extractor/python" "${final_tarball_path}" "${sequence_res}"
 status=$?
 popd >/dev/null
 exit $status
