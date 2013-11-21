@@ -8,11 +8,10 @@ http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-1
 Table 2
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 import os
 import logging
-import csv
 
 import dfxml
 
@@ -25,7 +24,7 @@ def main():
                     return
                 _sha1 = '"' + (fi.sha1() or "") + '"'
                 _md5 = '"' + (fi.md5() or "") + '"'
-                _filename = '"' + (fi.filename() or "") + '"'
+                _filename = '"' + os.path.basename((fi.filename() or "")) + '"'
                 _filesize = str(fi.filesize() or "")
                 print(",".join([_sha1, _md5, '""', _filename, _filesize, "", "", '""']), file=output_fh)
             dfxml.read_dfxml(xmlfile=input_fh, callback=process_fi)
