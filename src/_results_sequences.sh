@@ -55,7 +55,7 @@ dwf_tarball_results_dirs_index_previous=-1
 dwf_tarball_results_dirs_index_next=-1
 
 while read x; do
-  dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index]="${dwf_all_results_root}$x"
+  dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index]="${dwf_all_results_root}/slice$x"
 
   #Sanity check: The results directory is actually a directory
   if [ ! -d "${dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index]}" ]; then
