@@ -10,8 +10,9 @@ This script:
  * For each tarball, runs the differencing workflow and the fork slice script.
  * On successfully running both the differ and fork-slice, pops the tarball from the queue.
 """
+#TODO This script isn't really a process runner anymore, just a processee selector...
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 import os
 import sys
@@ -29,31 +30,23 @@ def main():
 
     #Fetch work queue
     if args.tails_only:
-        #This query is as in check_tarball_is_sequence_end.py, r574.
+        #This query is like check_tarball_is_sequence_end.py.
         query = """
 SELECT
   storage.*
 FROM
-  diskprint.slice AS slice,
   diskprint.storage AS storage
 WHERE
-  storage.slicehash = slice.slicehash AND
-  (slice.osetid, slice.appetid, slice.sliceid) NOT IN (
-    SELECT
-      s1.osetid,
-      s1.appetid,
-      s1.slicepredecessorid
+  storage.slicehash IN (
+    SELECT DISTINCT
+      end_slicehash
     FROM
-      diskprint.slice AS s1,
-      diskprint.slice AS s2
-    WHERE
-      s1.osetid = s2.osetid AND
-      s1.appetid = s2.appetid AND
-      s1.slicepredecessorid = s2.sliceid
+      diskprint.sequence
   )
 ;
         """
     else:
+        #TODO This needs to be tested against the new schema
         query = """
 SELECT
   pq.*
