@@ -30,7 +30,7 @@ else
 fi
 
 pushd "${outdir}" >/dev/null
-"$PYTHON3" "${script_dir}/make_sequence_deltas.py" $maybe_debug --with-script-path="${top_src_dir}/local/share/regxml_extractor/python" "$dwf_all_results_root" "$dwf_sequence_id"
+"$PYTHON3" "${script_dir}/make_sequence_deltas.py" $maybe_debug --config="${script_dir}/differ.cfg" --with-script-path="${top_src_dir}/local/share/regxml_extractor/python" "$dwf_all_results_root" "$dwf_sequence_id"
 status=$?
 popd >/dev/null
 exit $status
