@@ -6,7 +6,7 @@ make_sequence_deltas.py: Aggregate differences in ouput of Fiwalk and RegXML Ext
 For usage instructions, see the argument parser description below, or run this script without arguments.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 import sys
 import os
@@ -97,7 +97,7 @@ def main():
     tarball_abs_paths = differ_library.tarball_sequence_from_sequence_triplet(cursor, args.sequence_id)
     logging.debug("tarball_abs_paths = %r" % tarball_abs_paths)
     for tarball_abs_path in tarball_abs_paths:
-        re_abs_path = dwf_all_results_root + "/slice" + tarball_abs_path
+        re_abs_path = args.dwf_all_results_root + "/slice" + tarball_abs_path + "/invoke_regxml_extractor.sh"
         if not os.path.isdir(re_abs_path):
             raise Exception("Path in input file is not directory: %r." % re_abs_path)
         #TODO Test for logged success at re_abs_path + ".status.log"
@@ -163,7 +163,7 @@ def main():
           "hiveid": local_hiveid_counter,
           "hivepath": hive_fspath,
           "appetid": sequence_id_parts[1],
-          "osetid": sequence_id_part[0]
+          "osetid": sequence_id_parts[0]
         }
         rx_make_database.insert_db(outcur, "hive", hiveid_record)
         outconn.commit()

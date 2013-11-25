@@ -1,5 +1,5 @@
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 import os
 import sys
@@ -63,8 +63,8 @@ WHERE
     rows = [row for row in cursor]
     if len(rows) != 1:
         raise Exception("Unexpected results (%d rows, should be 1) from this query and these parameters: %r, %r." % (len(rows), sql_get_bounding_hashes, sequence_id_parts))
-    start_slicehash = row["start_slicehash"]
-    end_slicehash = row["end_slicehash"]
+    start_slicehash = rows[0]["start_slicehash"]
+    end_slicehash = rows[0]["end_slicehash"]
 
     #TODO I forget if there's a more efficient way to run a segment query with joins...pretty sure there is, given RDF query patterns.
     paths = []
