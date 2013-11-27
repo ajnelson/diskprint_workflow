@@ -1,5 +1,5 @@
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 import os
 import sys
@@ -116,8 +116,21 @@ if __name__ == "__main__":
 
         cursor.execute("SELECT COUNT(*) AS tally FROM diskprint.slice;")
         inrows = [row for row in cursor]
-        logging.debug("Note: The slice table currently has %r entries." % inrows[0]["tally"])
+        logging.debug("The slice table currently has %r entries." % inrows[0]["tally"])
 
         cursor.execute("SELECT COUNT(*) AS tally FROM diskprint.regdelta;")
         inrows = [row for row in cursor]
-        logging.debug("Note: The regdelta table currently has %r entries." % inrows[0]["tally"])
+        logging.debug("The regdelta table currently has %r entries." % inrows[0]["tally"])
+
+        cursor.execute("SELECT * FROM diskprint.storage;")
+        inrows = [row for row in cursor]
+        import collections
+        nonexists = []
+        for row in inrows:
+            if not os.path.exists(row["location"]):
+                nonexists.append(row["location"])
+        logging.debug("There are %d tarballs in the database that aren't found in the file system." % len(nonexists))
+        if len(nonexists) > 0:
+            logging.debug("They are:")
+            for path in nonexists:
+                logging.debug("\t%s" % path)
