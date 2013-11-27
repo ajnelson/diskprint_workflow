@@ -78,7 +78,7 @@ ORDER BY
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--tails_only", help="Only work on last tarballs of sequences", action="store_true")
-    parser.add_argument("--config", help="Configuration file", default="fork.cfg")
+    parser.add_argument("--config", help="Configuration file", default="differ.cfg")
     parser.add_argument("-d", "--debug", help="Enable debug printing", action="store_true")
     args = parser.parse_args()
 
