@@ -1,5 +1,5 @@
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 import os
 import sys
@@ -62,7 +62,7 @@ WHERE
     cursor.execute(sql_get_bounding_hashes, sequence_id_parts)
     rows = [row for row in cursor]
     if len(rows) != 1:
-        raise Exception("Unexpected results (%d rows, should be 1) from this query and these parameters: %r, %r." % (len(rows), sql_get_bounding_hashes, sequence_id_parts))
+        raise Exception("Unexpected results (%d rows, should be 1) from this query and these parameters: \n%s;\nParameters: %r." % (len(rows), sql_get_bounding_hashes, sequence_id_parts))
     start_slicehash = rows[0]["start_slicehash"]
     end_slicehash = rows[0]["end_slicehash"]
 
@@ -85,7 +85,7 @@ WHERE
         cursor.execute(sql_get_name_and_prev, (current_end_hash,))
         rows = [row for row in cursor]
         if len(rows) != 1:
-            raise Exception("Unexpected results (%d rows, should be 1) from this query and these parameters: %r, %r", (len(rows), sql_get_name_and_prev, (end_slicehash,)))
+            raise Exception("Unexpected results (%d rows, should be 1) from this query and these parameters: \n%s;\nParameters:%r." % (len(rows), sql_get_name_and_prev, (end_slicehash,)))
         paths.append(rows[0]["location"])
         if rows[0]["slicehash"] == start_slicehash:
             #Done.
