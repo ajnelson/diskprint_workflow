@@ -1,6 +1,6 @@
 #!/opt/local/bin/python2.7
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 import os
 import sys
@@ -47,31 +47,36 @@ def main():
         outdict = dict()
         for k in inrow.keys():
             indict[k] = inrow[k]
-        for k in ["hivepath", "appetid", "osetid"]:
+        for k in ["hivepath", "osetid", "appetid", "sequenceid"]:
             outdict[k] = inrow[k]
         #Inline function for maybe-once repetition
-        def fetch(od):
+        def _fetch(od):
             outcursor.execute("""
               SELECT
                 *
               FROM
                 diskprint.hive
               WHERE
-                hivepath = %s AND appetid = %s AND osetid = %s
+                hivepath = %s AND osetid = %s AND appetid = %s AND sequenceid = %s
               ;
-            """, (od["hivepath"], od["appetid"], od["osetid"]))
+            """, (od["hivepath"], od["appetid"], od["osetid"], od["sequenceid"]))
             return [row for row in outcursor]
         #checkrows should ultimately have just one record in it from the database, from which we get the translated ID of the hive sequence (hiveid identifies sequences)
-        checkrows = fetch(outdict)
+        checkrows = _fetch(outdict)
         if len(checkrows) > 1:
-            logging.error("Could not retrieve unique record that was just inserted; something about the database state is incorrect.  Expected to get 1 record, got %d." % len(checkrows))
+            logging.error("The diskprint.hive table should have a unique ID for this dictionary, but returned multiple records: %r." % outdict)
             if len(in_to_out_hiveid) > 0:
                 logging.info("You may want to issue this query to undo changes made by this script, after looking at the table:\n\tDELETE FROM diskprint.hive WHERE hiveid IN (%s);" % ",".join(map(str, in_to_out_hiveid.values())))
-            exit(1)
+            sys.exit(1)
         elif len(checkrows) == 0:
             insert_db_postgres(outcursor, "hive", outdict)
             outconn.commit()
-            checkrows = fetch(outdict)
+            checkrows = _fetch(outdict)
+            if len(checkrows) != 1:
+                logging.error("Could not retrieve unique record that was just inserted; something about the database state is incorrect.  Expected to get 1 record, got %d." % len(checkrows))
+                logging.info("Fetching dictionary: %r." % outdict)
+                logging.info("Records: %r." % checkrows)
+                sys.exit(1)
         in_to_out_hiveid[indict["hiveid"]] = checkrows[0]["hiveid"]
 
     logging.debug("Hive ID translation dictionary:\n\t%r" % in_to_out_hiveid)
@@ -107,6 +112,7 @@ def main():
         outdict["hiveid"] = in_to_out_hiveid.get(inrow["hiveid"])
         outdict["appetid"] = inrow["appetid"]
         outdict["osetid"] = inrow["osetid"]
+        outdict["sequenceid"] = inrow["sequenceid"]
         outdict["sliceid"] = inrow["sliceid"]
         if outdict["hiveid"] is None:
             logging.error("Failed to translate a hiveid: %r was not found." % inrow["hiveid"])

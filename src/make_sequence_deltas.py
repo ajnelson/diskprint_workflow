@@ -6,7 +6,7 @@ make_sequence_deltas.py: Aggregate differences in ouput of Fiwalk and RegXML Ext
 For usage instructions, see the argument parser description below, or run this script without arguments.
 """
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 import sys
 import os
@@ -64,14 +64,16 @@ def main():
         CREATE TABLE IF NOT EXISTS hive (
           hiveid NUMBER,
           hivepath TEXT,
+          osetid TEXT,
           appetid TEXT,
-          osetid TEXT
+          sequenceid NUMBER
         );
     """)
     outcur.execute("""
         CREATE TABLE IF NOT EXISTS regdelta (
-          appetid TEXT,
           osetid TEXT,
+          appetid TEXT,
+          sequenceid NUMBER,
           sliceid NUMBER,
           hiveid NUMBER,
           cellpath TEXT,
@@ -89,7 +91,6 @@ def main():
           slicetype TEXT
         );
     """)
-    outcur.execute("CREATE INDEX IF NOT EXISTS cellPath ON regdelta(cellpath);")
 
     #Build list of RegXML Extractor output directories
     re_dir_sequence = []
@@ -162,8 +163,9 @@ def main():
         hiveid_record = {
           "hiveid": local_hiveid_counter,
           "hivepath": hive_fspath,
+          "osetid": sequence_id_parts[0],
           "appetid": sequence_id_parts[1],
-          "osetid": sequence_id_parts[0]
+          "sequenceid": sequence_id_parts[2]
         }
         rx_make_database.insert_db(outcur, "hive", hiveid_record)
         outconn.commit()
@@ -194,6 +196,7 @@ def main():
                     regdelta_record = {
                       "osetid": hiveid_record["osetid"],
                       "appetid": hiveid_record["appetid"],
+                      "sequenceid": hiveid_record["sequenceid"],
                       "sliceid": sliceid_from_regxml_path(regxml_file),
                       "hiveid": local_hiveid_counter,
                       "cellpath": cell.full_path(),
@@ -223,6 +226,7 @@ def main():
                     regdelta_record = {
                       "osetid": hiveid_record["osetid"],
                       "appetid": hiveid_record["appetid"],
+                      "sequenceid": hiveid_record["sequenceid"],
                       "sliceid": sliceid_from_regxml_path(regxml_file),
                       "hiveid": local_hiveid_counter,
                       "cellpath": ocell.full_path(),
@@ -252,6 +256,7 @@ def main():
                     regdelta_record = {
                       "osetid": hiveid_record["osetid"],
                       "appetid": hiveid_record["appetid"],
+                      "sequenceid": hiveid_record["sequenceid"],
                       "sliceid": sliceid_from_regxml_path(regxml_file),
                       "hiveid": local_hiveid_counter,
                       "cellpath": cell.full_path(),
