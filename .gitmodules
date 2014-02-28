@@ -1,3 +1,6 @@
 [submodule "deps/diskprint_database"]
 	path = deps/diskprint_database
 	url = https://github.com/ajnelson/diskprint_database.git
+[submodule "deps/python-cybox"]
+	path = deps/python-cybox
+	url = https://github.com/CybOXProject/python-cybox.git
