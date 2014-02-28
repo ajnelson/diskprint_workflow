@@ -142,5 +142,13 @@ if [ $RE_should_build -eq 1 ]; then
   popd >/dev/null
 fi
 
+#Install CybOX bindings
+#Using --build-base is sufficient for pure Python code.
+#Ref: http://docs.python.org/3/install/#how-building-works
+pushd deps/python-cybox >/dev/null
+#Note that this assumes 'python' is Python 2.
+python setup.py build --build-base="$DWF_BUILD_PREFIX/share/python2"
+popd >/dev/null
+
 set +x
 echo "Done." >&2

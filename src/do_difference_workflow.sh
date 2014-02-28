@@ -537,6 +537,20 @@ if [ $any_errors -gt 0 ]; then
 fi
 
 
+#Create CybOX-formatted output from RDS output
+$my_inorder_parallel \
+  echo "Note: Starting CybOX re-formatting for \"{}\"." \>\&2 \; \
+  logandrunscript {} "$script_dirname/make_cybox_format.sh" slice \; \
+  :::: "$dwf_tarball_results_dirs_sequence_file"
+any_errors=$(count_script_errors slice "make_cybox_format.sh")
+
+#Bail out if any errors were found in the loop.
+if [ $any_errors -gt 0 ]; then
+  echo "Note: Encountered $any_errors errors in the CybOX conversion loop.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
+  exit 1
+fi
+
+
 #Create differential DFXML output directories after all Fiwalk output is successfully done
 $my_inorder_parallel \
   echo "Note: Starting differential DFXML processing, vs. baseline, for \"{}\"." \>\&2 \; \
