@@ -1,6 +1,10 @@
 #!/bin/bash
 
-#This script is a pseudo-git-submodule tracker.  Will be replaced on transitioning to Git.
+git submodule init deps/python-cybox
+git submodule sync deps/python-cybox
+git submodule update deps/python-cybox
+
+#The rest of this script is a pseudo-git-submodule tracker.  Will be replaced on transitioning to Git.
 
 AFFLIB_REPO=https://github.com/simsong/AFFLIBv3.git
 AFFLIB_COMMIT=b0a36e392c26e4d9e95a85a41071d794d4b9ee73
