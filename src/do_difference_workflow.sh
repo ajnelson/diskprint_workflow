@@ -483,14 +483,18 @@ if [ $any_errors -gt 0 ]; then
 fi
 
 
-#(Experimental) Create Fiwalk DFXML, including unallocated content.
+#Create Fiwalk DFXML, including unallocated content.
 $my_inorder_parallel \
   echo "Note: Starting Fiwalk all-files processing for \"{}\"." \>\&2 \; \
   logandrunscript {} "$script_dirname/make_fiwalk_dfxml_all.sh" slice \; \
   :::: "$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors slice "make_fiwalk_dfxml_all.sh")
 
-#Tolerate errors in this loop.
+#Bail out if any errors were found in the loop.
+if [ $any_errors -gt 0 ]; then
+  echo "Note: Encountered $any_errors errors in the Fiwalk loop.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
+  exit 1
+fi
 
 
 #Create Fiwalk DFXML output directories after all E01 output's successfully done
