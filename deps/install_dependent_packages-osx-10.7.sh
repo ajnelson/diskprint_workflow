@@ -10,7 +10,9 @@ sudo port install \
   coreutils \
   libewf \
   parallel \
+  py27-dateutil \
   py27-psycopg2 \
+  py33-dateutil \
   py33-psycopg2 \
   python27 \
   python33 \
