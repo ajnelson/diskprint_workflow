@@ -23,5 +23,8 @@ target_dfxml="${dwf_tarball_results_dirs[$target_dfxml_index]}/make_fiwalk_dfxml
 current="${dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index_current]}/make_fiwalk_dfxml_alloc.sh/fiout.dfxml"
 
 pushd "${dwf_output_dir}" >/dev/null
-"$PYTHON3" "$script_dir/idifference.py" --xml changes.dfxml "$target_dfxml" "$current"
+"$PYTHON3" "$script_dir/make_differential_dfxml.py" \
+  --debug \
+  "$target_dfxml" \
+  "$current"
 popd >/dev/null
