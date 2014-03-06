@@ -103,7 +103,7 @@ The aggregated results for this sequence are then rolled into the results databa
 ### Erasing generated results
 
 If you want to erase all the derived data, do these three steps:
-* Kill all the running instances of `do_difference_workflow.sh`
+* Kill all the running instances of `do_difference_workflow.sh`.
 * Delete the output root (`results` in the above example).
 * Delete all contents from the database's `regdelta` and `hive` tables.
 
