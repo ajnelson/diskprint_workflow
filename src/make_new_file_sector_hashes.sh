@@ -13,7 +13,7 @@ input_disk_image="${dwf_output_dir}/../invoke_vmdk_to_E01.sh/out.E01"
 
 "$PYTHON3" "${script_dir}/hash_sectors.py" \
   --debug \
-  --predicate=new \
+  --predicate=newormod \
   --xml="$input_dfxml" \
   "$input_disk_image" \
   "${dwf_output_dir}/sector_hashes.db"
