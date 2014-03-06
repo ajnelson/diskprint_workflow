@@ -564,7 +564,24 @@ $my_inorder_parallel \
   :::: "$dwf_tarball_results_dirs_sequence_file"
 any_errors=$(count_script_errors slice "make_differential_dfxml_prior.sh")
 
-#Tolerate errors with differential DFXML processing for now.
+#Tolerate errors with from-baseline differential DFXML processing for now.
+#However, the from-prior differential DFXML feeds into another script, so check it for errors.
+#Bail out if any errors were found in the loop.
+if [ $any_errors -gt 0 ]; then
+  echo "Note: Encountered $any_errors errors making differential DFXML from the prior image.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
+  exit 1
+fi
+
+
+#Create sector hashes of new files
+$my_inorder_parallel \
+  echo "Note: Starting new-file sector hashing \"{}\"." \>\&2 \; \
+  logandrunscript {} "$script_dirname/make_new_file_sector_hashes.sh" sequential_slice \; \
+  :::: "$dwf_tarball_results_dirs_sequence_file"
+any_errors=$(count_script_errors slice "make_new_file_sector_hashes.sh")
+
+
+#Tolerate errors with sector hashing for now.
 
 
 #Create RE output directories after all E01 output's successfully done.
