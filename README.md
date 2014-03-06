@@ -70,6 +70,38 @@ You will know it all worked when the last line of output is:
 
 ## Data generated
 
+Under the output root passed to `do_difference_workflow.sh`, there are two broad groups of results:
+
+* Per-slice results - output of programs that need only a single slice, such as hive extraction.
+* Sequential results - output of programs that need a pair of slices, such as differencing of hive contents from one slice to another.
+
+Note that the script directories are named according to the script files -- e.g. a single-slice script `foo.sh` creates a directory `slice/foo.sh`.  Logs are also created for each script run: `foo.sh.out.log`, `foo.sh.err.log`, and `foo.sh.status.log` for standard out, standard error, and the script's exit status (which should contain `0`).
+
+
+### Per-slice results
+
+* *Disk image extraction* - The script `invoke_vmdk_to_E01.sh` converts tarballs to disk images in the libewf format.
+* *DFXML generation* - The scripts `make_fiwalk_dfxml_all.sh` and `make_fiwalk_dfxml_alloc.sh` generate Fiwalk output for all files and only allocated files, respectively.
+* *DFXML validation* - Generated DFXML is validated against the [DFXML schema](https://github.com/dfxml-working-group/dfxml_schema), using `validate_fiwalk_dfxml_alloc.sh` and `validate_fiwalk_dfxml_all.sh`.
+* *File manifests in NSRL RDS format* - `make_rds_format.sh` converts DFXML documents to the [NSRL RDS format](http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-16.pdf), a CSV-style format.
+* *File manifests in CybOX format* - `make_cybox_format.sh` converts the NSRL RDS format to a [CybOX](https://cybox.mitre.org/) document.  The specific version of CybOX used is determined by the `deps/python-cybox` submodule's Git revision.
+* *Hive extraction* - Hive files are extracted by calling `invoke_regxml_extractor.sh`.
+* *Hive Perl processing* - The hive files are processed with some Registry Perl modules, under `run_reg_perl.sh`.
+* *RegXML conversion* - The hive files are also converted to RegXML using [RegXML Extractor](https://github.com/ajnelson/regxml_extractor/).  This is also found under the results for `invoke_regxml_extractor.sh`.
+
+
+### Sequential results
+
+* *Differential DFXML* - The file system level differences are created for each slice in the sequence.  Two differences are made: `make_differential_dfxml_baseline.sh` computes differences from the first slice of the sequence, and `make_differential_dfxml_prior.sh` from the previous slice in the sequence.
+* *Sector-level hashes* - `make_new_file_sector_hashes.sh` computes 512-byte sector hashes for each file that is new since the previous slice in the sequence.
+
+The sequence results are aggregated with `make_sequence_deltas.sh`, which uses [`rdifference.py`](https://github.com/ajnelson/dfxml/blob/master/python/rdifference.py) to determine Registry differences.
+
+The aggregated results for this sequence are then rolled into the results database for all sequences, using `export_sqlite_to_postgres.sh`.
+
+
+### Erasing generated results
+
 If you want to erase all the derived data, do these three steps:
 * Kill all the running instances of `do_difference_workflow.sh`
 * Delete the output root (`results` in the above example).
