@@ -10,8 +10,8 @@ AFFLIB_REPO=https://github.com/simsong/AFFLIBv3.git
 AFFLIB_COMMIT=b0a36e392c26e4d9e95a85a41071d794d4b9ee73
 DFXMLSCHEMA_REPO=https://github.com/ajnelson/dfxml_schema.git
 DFXMLSCHEMA_COMMIT=b1329fe1e18e58afd762f96ae827f9593c470120
-DFXML_REPO=https://github.com/ajnelson/dfxml.git
-DFXML_COMMIT=6e10e3d25735452a70a1f90412bd7f3a9998d9a4
+DFXML_REPO=https://github.com/simsong/dfxml.git
+DFXML_COMMIT=8e04707d9605a4a16bed66c765b906b479b2f851
 RE_REPO=https://github.com/ajnelson/regxml_extractor.git
 RE_COMMIT=d198f16448f7824f89ad177c825f41e6b7d17468
 
