@@ -26,5 +26,6 @@ pushd "${dwf_output_dir}" >/dev/null
 "$PYTHON3" "$script_dir/make_differential_dfxml.py" \
   --debug \
   "$target_dfxml" \
-  "$current"
+  "$current" \
+  >deltas.dfxml
 popd >/dev/null
