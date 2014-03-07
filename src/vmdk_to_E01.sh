@@ -64,14 +64,14 @@ mkdir -p "$tarball_extract_dir"
 pushd "$e01_dir" >/dev/null
 
 #Extract VM from tarball
-echo "Extracting .tar.gz..."
-tar -xz -f "$1" -C"$tarball_extract_dir" 2>"$tarball_extract_dir.tar_errors.log"
+echo "Extracting .tar.gz ..." >&2
+tar -xz -f "$1" -C"$tarball_extract_dir"
 status=$?
 if [ $status -ne 0 ]; then
-  echo "Error, status $status; see $tarball_extract_dir.tar_errors.log." >&2
+  echo "Error extracting tarball, status $status." >&2
   exit $status
 fi
-echo "Done."
+echo "Done." >&2
 
 #Convert vmdk file
 #Ignore resource fork files (._*)
@@ -81,17 +81,17 @@ if [ "$vmdk_path" == "" ]; then
   exit 1
 fi
 echo "Debug: .vmdk file: $vmdk_path" >&2
-echo "Converting .vmdk file to $iso_path ..."
-qemu-img convert "$vmdk_path" "$iso_path" 2>"$iso_path.qemu_errors.log"
+echo "Converting .vmdk file to $iso_path ..." >&2
+qemu-img convert "$vmdk_path" "$iso_path"
 status=$?
 if [ $status -ne 0 ]; then
   echo " Error, status $status; see $iso_path.qemu_errors.log." >&2
   exit $status
 fi
-echo " Done."
+echo "Done." >&2
 
 #Convert iso file
-echo "Converting .iso file..."
+echo "Converting .iso file to .E01 ..." >&2
 #Note: The `echo yes` is to deal with one last confirmation ewfacquire throws at you.
 echo yes | ewfacquire \
   -b64 \
@@ -116,15 +116,17 @@ echo yes | ewfacquire \
   "$iso_path"
 status=$?
 if [ $status -ne 0 ]; then
+  cat "$e01_path.ewf_errors.log" >&2
+  rm "$e01_path.ewf_errors.log"
   echo "Error, status $status; see error log $e01_path.ewf_errors.log." >&2
   exit $status
 fi
-echo "Done."
+echo "Done." >&2
 
 #Cleanup
-echo -n "Removing intermediary files..."
+echo -n "Removing intermediary files ..." >&2
 rm -rf "$tarball_extract_dir"
 rm "$iso_path"
-echo " Done."
+echo " Done." &2
 
 popd >/dev/null
