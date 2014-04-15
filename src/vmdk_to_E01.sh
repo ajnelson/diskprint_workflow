@@ -127,6 +127,6 @@ echo "Done." >&2
 echo -n "Removing intermediary files ..." >&2
 rm -rf "$tarball_extract_dir"
 rm "$iso_path"
-echo " Done." &2
+echo " Done." >&2
 
 popd >/dev/null
