@@ -27,4 +27,4 @@ else
   maybe_debug=--debug
 fi
 
-"$PYTHON2" "$script_dir/make_sequence_list.py" --config="$DIFFER_CONFIG" "$dwf_sequence_id" >"$outfile"
+"$PYTHON2" "$script_dir/make_sequence_list.py" $maybe_debug --config="$DIFFER_CONFIG" "$dwf_sequence_id" >"$outfile"
