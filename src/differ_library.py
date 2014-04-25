@@ -1,5 +1,5 @@
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 import os
 import sys
@@ -9,6 +9,9 @@ else:
     from configparser import ConfigParser
 import psycopg2
 import psycopg2.extras
+
+import logging
+_logger = logging.getLogger(os.path.basename(__file__))
 
 def db_conn_from_config_path(cfg_path):
     """
@@ -26,10 +29,10 @@ def db_conn_from_config_path(cfg_path):
     configrootdict["DBpassword"] = open(pwfilepath, "r").read().strip()                                           
     
     conn_string = "host='%(DBserverIP)s' dbname='%(DBname)s' user='%(DBusername)s' password='%(DBpassword)s'" % configrootdict                                                                                                              
-    #logging.debug("conn_string: \"%s\"." % conn_string)                                                              
-    conn = psycopg2.connect(conn_string)                                                                              
+    #_logger.debug("conn_string: \"%s\"." % conn_string)
+    conn = psycopg2.connect(conn_string)
     conn.autocommit = True                                                                                            
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)                                                   
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     return (conn, cursor)
 
 def split_sequence_id(sequence_id_string):
@@ -37,8 +40,7 @@ def split_sequence_id(sequence_id_string):
     try:
         assert len(parts) == 5
     except AssertionError as e:
-        import logging
-        logging.error("Unexpected format of sequence_id_string: %r" % sequence_id_string)
+        _logger.error("Unexpected format of sequence_id_string: %r" % sequence_id_string)
         raise
     osetid = "-".join(parts[0:2])
     appetid = "-".join(parts[2:4])
@@ -70,7 +72,7 @@ WHERE
     paths = []
     current_end_hash = end_slicehash
     sql_get_name_and_prev = """\
-SELECT
+SELECT DISTINCT
   slicelineage.slicehash,
   slicelineage.predecessor_slicehash,
   storage.location
@@ -85,6 +87,9 @@ WHERE
         cursor.execute(sql_get_name_and_prev, (current_end_hash,))
         rows = [row for row in cursor]
         if len(rows) != 1:
+            _logger.debug("Row data:")
+            for (row_no, row) in enumerate(rows):
+                _logger.debug("%d\t%r" % (row_no, row))
             raise Exception("Unexpected results (%d rows, should be 1) from this query and these parameters: \n%s;\nParameters:%r." % (len(rows), sql_get_name_and_prev, (end_slicehash,)))
         paths.append(rows[0]["location"])
         if rows[0]["slicehash"] == start_slicehash:
@@ -97,7 +102,6 @@ WHERE
 #This 'main' logic is just for checking that the database is reachable with a given config file
 if __name__ == "__main__":
     import argparse
-    import logging
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", help="Configuration file", default="differ.cfg")
@@ -116,11 +120,11 @@ if __name__ == "__main__":
 
         cursor.execute("SELECT COUNT(*) AS tally FROM diskprint.slice;")
         inrows = [row for row in cursor]
-        logging.debug("The slice table currently has %r entries." % inrows[0]["tally"])
+        _logger.debug("The slice table currently has %r entries." % inrows[0]["tally"])
 
         cursor.execute("SELECT COUNT(*) AS tally FROM diskprint.regdelta;")
         inrows = [row for row in cursor]
-        logging.debug("The regdelta table currently has %r entries." % inrows[0]["tally"])
+        _logger.debug("The regdelta table currently has %r entries." % inrows[0]["tally"])
 
         cursor.execute("SELECT * FROM diskprint.storage;")
         inrows = [row for row in cursor]
@@ -129,8 +133,8 @@ if __name__ == "__main__":
         for row in inrows:
             if not os.path.exists(row["location"]):
                 nonexists.append(row["location"])
-        logging.debug("There are %d tarballs in the database that aren't found in the file system." % len(nonexists))
+        _logger.debug("There are %d tarballs in the database that aren't found in the file system." % len(nonexists))
         if len(nonexists) > 0:
-            logging.debug("They are:")
+            _logger.debug("They are:")
             for path in nonexists:
-                logging.debug("\t%s" % path)
+                _logger.debug("\t%s" % path)
