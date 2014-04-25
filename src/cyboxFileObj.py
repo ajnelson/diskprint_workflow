@@ -72,7 +72,7 @@ def main():
                 f.add_hash(sha1)
 
 #Store the file objects in an array
-            lst.append(f)
+                lst.append(f)
             #count = len(lst)
 
     lstlen = len(lst)
