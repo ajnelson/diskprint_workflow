@@ -1,6 +1,6 @@
 #!/opt/local/bin/python2.7
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 import os
 import sys
@@ -61,7 +61,7 @@ def main():
               WHERE
                 hivepath = %s AND osetid = %s AND appetid = %s AND sequenceid = %s
               ;
-            """, (od["hivepath"], od["appetid"], od["osetid"], od["sequenceid"]))
+            """, (od["hivepath"], od["osetid"], od["appetid"], od["sequenceid"]))
             return [row for row in outcursor]
         #checkrows should ultimately have just one record in it from the database, from which we get the translated ID of the hive sequence (hiveid identifies sequences)
         checkrows = _fetch(outdict)
