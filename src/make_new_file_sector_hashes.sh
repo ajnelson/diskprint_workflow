@@ -20,3 +20,11 @@ input_disk_image="${dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index_cur
   --xml="$input_dfxml" \
   "$input_disk_image" \
   "${dwf_output_dir}/sector_hashes.db"
+
+"$PYTHON3" "${script_dir}/hash_sectors.py" \
+  --debug \
+  --pad \
+  --predicate=newormod \
+  --xml="$input_dfxml" \
+  "$input_disk_image" \
+  "${dwf_output_dir}/sector_hashes_padded.db"
