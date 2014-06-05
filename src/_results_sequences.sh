@@ -46,7 +46,7 @@ fi
 
 
 #Definitions
-#Note that the _previous and _next indces are kept at this sentinel value if there is no previous or next image in the sequence.
+#Note that the _previous and _next indices are kept at this sentinel value if there is no previous or next image in the sequence.
 declare -a dwf_tarball_results_dirs
 dwf_tarball_results_dirs_index=0
 dwf_tarball_results_dirs_index_end=-1
@@ -55,12 +55,13 @@ dwf_tarball_results_dirs_index_previous=-1
 dwf_tarball_results_dirs_index_next=-1
 
 while read x; do
+
   dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index]="${dwf_all_results_root}/slice$x"
 
   #Sanity check: The results directory is actually a directory
   if [ ! -d "${dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index]}" ]; then
     if [ "x$TESTING_RESULTS_SEQUENCES" != "xyes" ]; then
-      echo "Error: _results_sequences.sh: '$dwf_tarball_results_dirs_sequence_file' supplied a results directory that is not actually a directory." >&2
+      echo "ERROR:_results_sequences.sh: '$dwf_tarball_results_dirs_sequence_file' supplied a results directory that is not actually a directory." >&2
       exit 1
     fi
   fi
@@ -78,15 +79,15 @@ while read x; do
 
   #Sanity check
   if [ $dwf_tarball_results_dirs_index -ge $INSANE_DIR_COUNT ]; then
-    echo "Error: _results_sequences.sh: array index has grown to $INSANE_DIR_COUNT.  This is assumed to be an error.  Inspect the contents of '$dwf_tarball_results_dirs_sequence_file', or relax this check." >&2
+    echo "ERROR:_results_sequences.sh: array index has grown to $INSANE_DIR_COUNT.  This is assumed to be an error.  Inspect the contents of '$dwf_tarball_results_dirs_sequence_file', or relax this check." >&2
     exit 1
   fi
 done <"$dwf_tarball_results_dirs_sequence_file"
 
 if [ $dwf_tarball_results_dirs_index_current -ge 0 ]; then
-  dwf_tarball_results_dirs_index_previous=$(expr $dwf_tarball_results_dirs_index_current - 1);
+  dwf_tarball_results_dirs_index_previous=$(($dwf_tarball_results_dirs_index_current - 1))
 
-  dwf_tarball_results_dirs_index_next=$(expr $dwf_tarball_results_dirs_index_current + 1);
+  dwf_tarball_results_dirs_index_next=$(($dwf_tarball_results_dirs_index_current + 1))
   if [ $dwf_tarball_results_dirs_index_next -gt $dwf_tarball_results_dirs_index_end ]; then
     dwf_tarball_results_dirs_index_next=-1
   fi
