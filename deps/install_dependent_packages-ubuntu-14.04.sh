@@ -9,7 +9,7 @@ source "${script_dir}/regxml_extractor.git/deps/install_dependent_packages-ubunt
 sudo apt-get install \
   coreutils \
   libewf-dev \
-  libewf1 \
+  libewf2 \
   ewf-tools \
   parallel \
   python-psycopg2 \
