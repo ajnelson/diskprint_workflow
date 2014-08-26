@@ -1,5 +1,8 @@
 #!/bin/bash
 
+echo "Due to a strange error in python3-psycopg2, Ubuntu 14.04 is not currently supported." >&2
+exit 38 #ENOSYS
+
 #One-liner c/o http://stackoverflow.com/a/246128/1207160
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 
