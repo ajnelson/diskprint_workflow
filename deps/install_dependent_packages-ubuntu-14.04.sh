@@ -13,7 +13,9 @@ sudo apt-get install \
   ewf-tools \
   parallel \
   python-psycopg2 \
+  python-setuptools \
   python3-psycopg2 \
+  python3-setuptools \
   python2.7 \
   python3 \
   qemu
