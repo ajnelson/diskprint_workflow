@@ -4,7 +4,7 @@
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 
 #Note that this included script sets -e and -x, so errors will be caught appropriately.
-source "${script_dir}/regxml_extractor.git/deps/install_dependent_packages-ubuntu-12.04.sh"
+source "${script_dir}/regxml_extractor.git/deps/install_dependent_packages-ubuntu-14.04.sh"
 
 sudo apt-get install \
   coreutils \
