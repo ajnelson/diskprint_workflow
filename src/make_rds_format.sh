@@ -9,5 +9,6 @@ source "${script_dir}/_pick_pythons.sh"
 output_dir="${2}"
 
 fiout="${output_dir}/../make_fiwalk_dfxml_alloc.sh/fiout.dfxml"
+diskimage="${output_dir}/../invoke_vmdk_to_E01.sh/out.E01"
 
-"$PYTHON3" "${script_dir}/make_rds_format.py" "$fiout" "${output_dir}/NSRLFile.txt"
+"$PYTHON3" "${script_dir}/make_rds_format.py" "$fiout" "$diskimage" "${output_dir}/NSRLFile.txt"
