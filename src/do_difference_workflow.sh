@@ -330,22 +330,34 @@ logandrunscript () {
   #This function creates the script's output directory, and several log files alongside the directory: stdout, stderr, and exit status.
   #This function checks for an exit status log, and if it finds one that reports a previous run was successful, it just exits saying work has been successfully done.  NB: If a previous script in the sequence has had its results updated, you should delete all of the output it affects (a very, very broad taint analysis).
   #Function arguments:
-  # $1: Image tarball absolute path (fimage)
+  # $1: Whether this is a node-, edge-, or graph-level analysis (node|edge|graph)
   # $2: Script basename (fscript)
-  # $3: Branch from the results root directory (slice|sequence|sequential_slice)
+  # $3: Image tarball absolute path (fimage)
+  # $4: Second image tarball absolute path (for edges)
 
-  fimage="$1"
+  analysis_type="$1"
+
   fscript="$2"
-  slice_or_sequence="$3"
   fscript_basename="$(basename $fscript)"
-  if [ "$slice_or_sequence" == "slice" ]; then
-    foutdir="${dwf_all_results_root}/slice${fimage}/${fscript_basename}"
-  elif [ "$slice_or_sequence" == "sequence" ]; then
-    foutdir="${outdir_per_sequence}/${fscript_basename}"
-  elif [ "$slice_or_sequence" == "sequential_slice" ]; then
-    foutdir="${dwf_sequential_slice_outdir}${fimage}/${fscript_basename}"
+
+  if [ "$analysis_type" == "edge" ]
+
+  if [ "$analysis_type" == "node" ]; then
+    node_id0=$(basename "$3")
+    foutdir="${dwf_all_results_root}/by_node/${node_id0}/${fscript_basename}"
+  elif [ "$analysis_type" == "edge" ]; then
+    node_id0=$(basename "$3")
+    node_id1=$(basename "$4")
+    if [ -z "${node_id1}" ]; then
+      echo "ERROR:$0:logandrunscript called on an edge without an end point for the edge." >&2
+      exit 1
+    fi
+    foutdir="${dwf_all_results_root}/by_edge/${node_id0}/${node_id1}/${fscript_basename}"
+  elif [ "$analysis_type" == "graph" ]; then
+    graph_id="$3"
+    foutdir="${dwf_all_results_root}/by_graph/${graph_id}/${fscript_basename}"
   else
-    "$0: Error: logandrunscript called without a proper slice-or-sequence argument." >&2
+    "$0: Error: logandrunscript called without a proper analysis type argument." >&2
     exit 1
   fi
 
@@ -353,15 +365,11 @@ logandrunscript () {
   printf "Debug: (logandrunscript)\n" >&2
   printf "\t(Local)\n" >&2
   printf "\t\$#=$#\n" >&2
-  printf "\t\$fimage=$fimage\n" >&2
   printf "\t\$fscript=$fscript\n" >&2
-  printf "\t\$fscript_basename=$fscript_basename\n" >&2
   printf "\t\$foutdir=$foutdir\n" >&2
   printf "\t(Global)\n" >&2
   printf "\t\$@=$@" >&2; printf "\n" >&2 #$@'s null terminated
   printf "\t\$dwf_all_results_root=$dwf_all_results_root\n" >&2
-  printf "\t\$outdir_per_tarball=$outdir_per_tarball\n" >&2
-  printf "\t\$outdir_per_sequence=$outdir_per_sequence\n" >&2
 
   if [ -f "$foutdir.status.log" ] && [ "x$(cat "$foutdir.status.log")" == "x0" ]; then
     echo "Note: Using previously-created output in \"$foutdir\"." >&2
@@ -373,8 +381,16 @@ logandrunscript () {
     else
       mkdir -p "$foutdir"
       echo "Started." >"$foutdir.status.log"
-      "$fscript" "$fimage" "$foutdir" >"$foutdir.out.log" 2>"$foutdir.err.log"
-      status=$?
+      if [ "$analysis_type" == "node" ]; then
+        "$fscript" "$node_id0" "$foutdir" >"$foutdir.out.log" 2>"$foutdir.err.log"
+        status=$?
+      elif [ "$analysis_type" == "edge" ]; then
+        "$fscript" "$node_id0" "$node_id1" "$foutdir" >"$foutdir.out.log" 2>"$foutdir.err.log"
+        status=$?
+      elif [ "$analysis_type" == "graph" ]; then
+        "$fscript" "$graph_id" "$foutdir" >"$foutdir.out.log" 2>"$foutdir.err.log"
+        status=$?
+      fi
       echo $status>"$foutdir.status.log"
       if [ $status -ne 0 ]; then
         echo "Error: $fscript_basename failed.  See error log \"$foutdir.err.log\"." >&2
@@ -400,6 +416,7 @@ logged_success() {
   return 1
 }
 
+#AJN TODO 20140826
 count_script_errors() {
   #Parameters:
   # 1) slice|sequence
@@ -445,22 +462,9 @@ count_script_errors() {
 my_inorder_parallel="parallel --keep-order -j$num_jobs"
 
 
-#Check that this is the end of a sequence.  Abort, status 0, if not an end.
-logandrunscript "$final_tarball_path" "$script_dirname/check_tarball_is_sequence_end.sh" slice
-any_errors=$(count_script_errors slice "check_tarball_is_sequence_end.sh" "$final_tarball_path")
-if [ $any_errors -gt 0 ]; then
-  echo "Note: Something went wrong checking whether this was a sequence end.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
-  exit 1
-fi
-if [ ! -r "${dwf_all_results_root}/slice${final_tarball_path}/check_tarball_is_sequence_end.sh/YES" ]; then
-  echo "Note: This tarball does not appear to be a sequence end.  Quitting.  The workflow should be called on the end of a slice sequence (i.e. a slice that precedes no other slice)." >&2
-  exit 0
-fi
-
-
 #Create the sequence list.
-logandrunscript "$final_tarball_path" "$script_dirname/make_sequence_list.sh" sequence
-any_errors=$(count_script_errors sequence "make_sequence_list.sh")
+logandrunscript graph "$script_dirname/make_sequence_list.sh" "$arg_graph_id"
+any_errors=$(count_script_errors graph "make_sequence_list.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Note: Something went wrong making the sequence list.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   exit 1
