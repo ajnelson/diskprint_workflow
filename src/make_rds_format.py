@@ -8,7 +8,7 @@ http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-1
 Table 2
 """
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 import os
 import logging
@@ -19,7 +19,7 @@ import Objects
 def main():
     global args
     with open(args.output_file, "w", newline='\r\n') as output_fh:
-        for (event, obj) in Objects.iterparse(input_dfxml):
+        for (event, obj) in Objects.iterparse(args.input_dfxml):
             if not isinstance(obj, Objects.FileObject):
                 continue
 
@@ -43,7 +43,7 @@ def main():
             _crc32 = '""'
             if obj.filesize > 0 and obj.data_brs:
                 crc = 0
-                for byte_buffer in obj.data_brs.iter_contents(args.backing_image):
+                for byte_buffer in obj.data_brs.iter_contents(args.input_disk_image):
                     crc = binascii.crc32(byte_buffer, crc)
                 #This line c/o: https://docs.python.org/3.3/library/binascii.html#binascii.crc32
                 _crc32 = '"{:#010x}"'.format(crc & 0xffffffff)[2:]
