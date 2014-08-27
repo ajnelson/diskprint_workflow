@@ -8,8 +8,8 @@ set -e
 #Define Pythons
 source "${script_dir}/_pick_pythons.sh"
 
-output_dir="${2}"
+dwf_output_dir="${2}"
 
-rdsout="${output_dir}/../make_rds_format.sh/NSRLFile.txt"
+rdsout="${dwf_output_dir}/../make_rds_format.sh/NSRLFile.txt"
 
-"$PYTHON2" "${script_dir}/cyboxFileObj.py" "$rdsout" > "${output_dir}/FileObjs.xml"
+"$PYTHON2" "${script_dir}/cyboxFileObj.py" "$rdsout" > "${dwf_output_dir}/FileObjs.xml"

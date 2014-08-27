@@ -8,7 +8,7 @@ http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-1
 Table 2
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 import os
 import logging
@@ -21,6 +21,10 @@ def main():
     with open(args.output_file, "w", newline='\r\n') as output_fh:
         for (event, obj) in Objects.iterparse(input_dfxml):
             if not isinstance(obj, Objects.FileObject):
+                continue
+
+            #File must be new or modified.
+            if not ("new" in obj.annos or "modified" in obj.annos):
                 continue
 
             #File must be regular (not a directory, link, etc).
