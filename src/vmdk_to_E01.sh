@@ -99,6 +99,7 @@ echo yes | ewfacquire \
   -c"fast" \
   -C"$diskprint_name" \
   -D"Converted VMDK of diskprint $diskprint_name" \
+  -d "sha1" \
   -e"NIST NSRL crew" \
   -E"Evidence $diskprint_name" \
   -f"encase6" \
