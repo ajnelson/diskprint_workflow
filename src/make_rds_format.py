@@ -8,11 +8,13 @@ http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-1
 Table 2
 """
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 import os
 import logging
 import binascii
+
+_logger = logging.getLogger(os.path.basename(__file__))
 
 import Objects
 
@@ -35,6 +37,11 @@ def main():
             if not obj.alloc:
                 continue
 
+            #To get the CRC32, the file must not be compressed.  (The .compressed property currently denotes NTFS compression.  I haven't checked to see if this is extractable.  So for now, skip compressed files.)
+            if obj.compressed:
+                _logger.info("Skipping a file stored with NTFS compression (id=%r)." % obj.id)
+                continue
+
             _sha1 = '"' + (obj.sha1 or "") + '"'
             _md5 = '"' + (obj.md5 or "") + '"'
             _filename = '"' + os.path.basename(obj.filename or "") + '"'
@@ -43,10 +50,16 @@ def main():
             _crc32 = '""'
             if obj.filesize > 0 and obj.data_brs:
                 crc = 0
-                for byte_buffer in obj.data_brs.iter_contents(args.input_disk_image):
-                    crc = binascii.crc32(byte_buffer, crc)
+                try:
+                    for byte_buffer in obj.data_brs.iter_contents(args.input_disk_image):
+                        crc = binascii.crc32(byte_buffer, crc)
                 #This line c/o: https://docs.python.org/3.3/library/binascii.html#binascii.crc32
-                _crc32 = '"{:#010x}"'.format(crc & 0xffffffff)[2:]
+                    _crc32 = '"{:#010x}"'.format(crc & 0xffffffff)[2:]
+                except:
+                    _logger.info("Input DFXML file: %r." % os.path.abspath(args.input_dfxml))
+                    _logger.info("File ID: %r." % obj.id)
+                    _logger.info("Object: %r." % obj)
+                    raise
 
             print(",".join([_sha1, _md5, _crc32, _filename, _filesize, "", "", '""']), file=output_fh)
 
