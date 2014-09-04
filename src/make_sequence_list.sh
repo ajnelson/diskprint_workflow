@@ -14,7 +14,7 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 source "${script_dir}/_pick_pythons.sh"
 
 final_tarball_path="$1"
-outfile="$2/sequence_tarballs.txt"
+outfile="$2/sequence_nodes.txt"
 
 if [ $debug -eq 0 ]; then
   maybe_debug=

@@ -340,8 +340,6 @@ logandrunscript () {
   fscript="$2"
   fscript_basename="$(basename $fscript)"
 
-  if [ "$analysis_type" == "edge" ]
-
   if [ "$analysis_type" == "node" ]; then
     node_id0=$(basename "$3")
     foutdir="${dwf_all_results_root}/by_node/${node_id0}/${fscript_basename}"
@@ -419,13 +417,12 @@ logged_success() {
 #AJN TODO 20140826
 count_script_errors() {
   #Parameters:
-  # 1) slice|sequence
+  # 1) node|edge|graph
   # 2) Target script, for checking exit statuses
-  # 3) Optional: Target result base (slice or sequence) directory, parent of the script output directory.
   error_tally=0
-  slice_or_sequence="$1"
+  analysis_type="$1"
   target_script="$2"
-  target_result_base="$3"
+
   _tally() {
     if [ -r "$statlog" ]; then
       logged_status="$(head -n1 "$statlog")"
@@ -434,26 +431,25 @@ count_script_errors() {
       fi
     fi
   }
-  if [ "$slice_or_sequence" == "slice" ]; then
-    if [ -z "$3" ]; then
-      while read tarball_abs_path; do
-        statlog="${dwf_all_results_root}/slice${tarball_abs_path}/${target_script}.status.log"
+  if [ "$analysis_type" == "node" ]; then
+    while read node_id; do
+      statlog="${dwf_all_results_root}/by_node/${node_id}/${target_script}.status.log"
+      _tally
+    done <"$dwf_node_sequence_file"
+  elif [ "$analysis_type" == "edge" ]; then
+    node_id0=
+    while read node_id1; do
+      if [ ! -z "$node_id0" ]; then
+        statlog="${dwf_all_results_root}/by_edge/${node_id0}/${node_id1}/${target_script}.status.log"
         _tally
-      done <"$dwf_tarball_results_dirs_sequence_file"
-    else
-      statlog="${target_result_base}/${target_script}.status.log"
-      _tally
-    fi
-  elif [ "$slice_or_sequence" == "sequence" ]; then
-    statlog="${outdir_per_sequence}/${target_script}.status.log"
+      fi
+      node_id0=
+    done <"$dwf_node_sequence_file"
+  elif [ "$analysis_type" == "graph" ]; then
+    statlog="${dwf_all_results_root}/by_graph/${dwf_graph_id}/${target_script}.status.log"
     _tally
-  elif [ "$slice_or_sequence" == "sequential_slice" ]; then
-    while read tarball_abs_path; do
-      statlog="${dwf_sequential_slice_outdir}${tarball_abs_path}/${target_script}.status.log"
-      _tally
-    done <"$dwf_tarball_results_dirs_sequence_file"
   else
-    echo "$0: Error: count_script_errors called with bad first argument (should be 'slice', 'sequence', or 'sequential_slice'): $slice_or_sequence." >&2
+    echo "ERROR:$0:count_script_errors called with bad first argument (should be 'node', 'edge', or 'graph'), received: ${analysis_type}." >&2
     exit 1
   fi
   echo $error_tally
@@ -470,15 +466,7 @@ if [ $any_errors -gt 0 ]; then
   exit 1
 fi
 #(This next variable is hard-coded between here and the make_sequence_list.sh script.)
-export dwf_tarball_results_dirs_sequence_file="$outdir_per_sequence/make_sequence_list.sh/sequence_tarballs.txt"
-
-#Create E01s
-$my_inorder_parallel \
-  echo "Note: Starting E01 processing for \"{}\"." \>\&2 \; \
-  logandrunscript {} "$script_dirname/invoke_vmdk_to_E01.sh" slice \; \
-  :::: "$dwf_tarball_results_dirs_sequence_file"
-
-any_errors=$(count_script_errors slice "invoke_vmdk_to_E01.sh")
+export dwf_node_sequence_file="${dwf_all_results_root}/by_graph/make_sequence_list.sh/sequence_nodes.txt"
 
 #Bail out if any errors were found in the loop.
 if [ $any_errors -gt 0 ]; then
@@ -490,9 +478,9 @@ fi
 #Create Fiwalk DFXML, including unallocated content.
 $my_inorder_parallel \
   echo "Note: Starting Fiwalk all-files processing for \"{}\"." \>\&2 \; \
-  logandrunscript {} "$script_dirname/make_fiwalk_dfxml_all.sh" slice \; \
-  :::: "$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors slice "make_fiwalk_dfxml_all.sh")
+  logandrunscript node {} "$script_dirname/make_fiwalk_dfxml_all.sh" \; \
+  :::: "$dwf_node_sequence_file"
+any_errors=$(count_script_errors node "make_fiwalk_dfxml_all.sh")
 
 #Bail out if any errors were found in the loop.
 if [ $any_errors -gt 0 ]; then
@@ -504,9 +492,9 @@ fi
 #Create Fiwalk DFXML output directories after all E01 output's successfully done
 $my_inorder_parallel \
   echo "Note: Starting Fiwalk allocated-only processing for \"{}\"." \>\&2 \; \
-  logandrunscript {} "$script_dirname/make_fiwalk_dfxml_alloc.sh" slice \; \
-  :::: "$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors slice "make_fiwalk_dfxml_alloc.sh")
+  logandrunscript node {} "$script_dirname/make_fiwalk_dfxml_alloc.sh" \; \
+  :::: "$dwf_node_sequence_file"
+any_errors=$(count_script_errors node "make_fiwalk_dfxml_alloc.sh")
 
 #Bail out if any errors were found in the loop.
 if [ $any_errors -gt 0 ]; then
@@ -518,59 +506,31 @@ fi
 #Try validating Fiwalk output with DFXML schema
 $my_inorder_parallel \
   echo "Note: Validating Fiwalk allocated-only results from \"{}\"." \>\&2 \; \
-  logandrunscript {} "$script_dirname/validate_fiwalk_dfxml_alloc.sh" slice \; \
-  :::: "$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors slice "validate_fiwalk_dfxml_alloc.sh")
+  logandrunscript node {} "$script_dirname/validate_fiwalk_dfxml_alloc.sh" \; \
+  :::: "$dwf_node_sequence_file"
+any_errors=$(count_script_errors node "validate_fiwalk_dfxml_alloc.sh")
 
 $my_inorder_parallel \
   echo "Note: Validating Fiwalk all-files results from \"{}\"." \>\&2 \; \
-  logandrunscript {} "$script_dirname/validate_fiwalk_dfxml_all.sh" slice \; \
-  :::: "$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors slice "validate_fiwalk_dfxml_all.sh")
+  logandrunscript node {} "$script_dirname/validate_fiwalk_dfxml_all.sh" \; \
+  :::: "$dwf_node_sequence_file"
+any_errors=$(count_script_errors node "validate_fiwalk_dfxml_all.sh")
 
 #Tolerate errors with DFXML validation for now.
-
-
-#Create RDS-formatted output from Fiwalk DFXML
-$my_inorder_parallel \
-  echo "Note: Starting RDS re-formatting for \"{}\"." \>\&2 \; \
-  logandrunscript {} "$script_dirname/make_rds_format.sh" slice \; \
-  :::: "$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors slice "make_rds_format.sh")
-
-#Bail out if any errors were found in the loop.
-if [ $any_errors -gt 0 ]; then
-  echo "Note: Encountered $any_errors errors in the RDS conversion loop.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
-  exit 1
-fi
-
-
-#Create CybOX-formatted output from RDS output
-$my_inorder_parallel \
-  echo "Note: Starting CybOX re-formatting for \"{}\"." \>\&2 \; \
-  logandrunscript {} "$script_dirname/make_cybox_format.sh" slice \; \
-  :::: "$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors slice "make_cybox_format.sh")
-
-#Bail out if any errors were found in the loop.
-if [ $any_errors -gt 0 ]; then
-  echo "Note: Encountered $any_errors errors in the CybOX conversion loop.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
-  exit 1
-fi
 
 
 #Create differential DFXML output directories after all Fiwalk output is successfully done
 $my_inorder_parallel \
   echo "Note: Starting differential DFXML processing, vs. baseline, for \"{}\"." \>\&2 \; \
-  logandrunscript {} "$script_dirname/make_differential_dfxml_baseline.sh" sequential_slice \; \
-  :::: "$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors slice "make_differential_dfxml_baseline.sh")
+  logandrunscript edge {} "$script_dirname/make_differential_dfxml_baseline.sh" \; \
+  :::: "$dwf_node_sequence_file"
+any_errors=$(count_script_errors edge "make_differential_dfxml_baseline.sh")
 
 $my_inorder_parallel \
   echo "Note: Starting differential DFXML processing, vs. previous image, for \"{}\"." \>\&2 \; \
-  logandrunscript {} "$script_dirname/make_differential_dfxml_prior.sh" sequential_slice \; \
-  :::: "$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors slice "make_differential_dfxml_prior.sh")
+  logandrunscript edge {} "$script_dirname/make_differential_dfxml_prior.sh" \; \
+  :::: "$dwf_node_sequence_file"
+any_errors=$(count_script_errors node "make_differential_dfxml_prior.sh")
 
 #Tolerate errors with from-baseline differential DFXML processing for now.
 #However, the from-prior differential DFXML feeds into another script, so check it for errors.
@@ -584,21 +544,49 @@ fi
 #Create sector hashes of new files
 $my_inorder_parallel \
   echo "Note: Starting new-file sector hashing \"{}\"." \>\&2 \; \
-  logandrunscript {} "$script_dirname/make_new_file_sector_hashes.sh" sequential_slice \; \
-  :::: "$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors slice "make_new_file_sector_hashes.sh")
+  logandrunscript edge {} "$script_dirname/make_new_file_sector_hashes.sh" \; \
+  :::: "$dwf_node_sequence_file"
+any_errors=$(count_script_errors edge "make_new_file_sector_hashes.sh")
 
 
 #Tolerate errors with sector hashing for now.
+
+
+#Create RDS-formatted output from Fiwalk DFXML
+$my_inorder_parallel \
+  echo "Note: Starting RDS re-formatting for \"{}\"." \>\&2 \; \
+  logandrunscript edge {} "$script_dirname/make_rds_format.sh" \; \
+  :::: "$dwf_node_sequence_file"
+any_errors=$(count_script_errors edge "make_rds_format.sh")
+
+#Bail out if any errors were found in the loop.
+if [ $any_errors -gt 0 ]; then
+  echo "Note: Encountered $any_errors errors in the RDS conversion loop.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
+  exit 1
+fi
+
+
+#Create CybOX-formatted output from RDS output
+$my_inorder_parallel \
+  echo "Note: Starting CybOX re-formatting for \"{}\"." \>\&2 \; \
+  logandrunscript edge {} "$script_dirname/make_cybox_format.sh" \; \
+  :::: "$dwf_node_sequence_file"
+any_errors=$(count_script_errors edge "make_cybox_format.sh")
+
+#Bail out if any errors were found in the loop.
+if [ $any_errors -gt 0 ]; then
+  echo "Note: Encountered $any_errors errors in the CybOX conversion loop.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
+  exit 1
+fi
 
 
 #Create RE output directories after all E01 output's successfully done.
 #(Creating per-image RE immediately after creating the E01 (and similarly with Fiwalk) means basically trying to integrate Make again: Suddenly, there's a piecemeal, per-tarball dependency graph that has to be defined. A Bash array could probably do it, but recovering from failure becomes tedious right-quick.)
 $my_inorder_parallel \
   echo "Note: Starting RegXML Extractor processing for \"{}\"." \>\&2 \; \
-  logandrunscript {} "$script_dirname/invoke_regxml_extractor.sh" slice \; \
-  :::: "$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors slice "invoke_regxml_extractor.sh")
+  logandrunscript node {} "$script_dirname/invoke_regxml_extractor.sh" \; \
+  :::: "$dwf_node_sequence_file"
+any_errors=$(count_script_errors node "invoke_regxml_extractor.sh")
 
 #Bail out if any errors were found in the loop.
 if [ $any_errors -gt 0 ]; then
@@ -610,17 +598,17 @@ fi
 #Insert Perl module results; non-critical for now.
 $my_inorder_parallel \
   echo "Note: Starting Perl modules on RegXML Extractor hives for \"{}\"." \>\&2 \; \
-  logandrunscript {} "$script_dirname/run_reg_perl.sh" slice \; \
-  :::: "$dwf_tarball_results_dirs_sequence_file"
-any_errors=$(count_script_errors slice "run_reg_perl.sh")
+  logandrunscript node {} "$script_dirname/run_reg_perl.sh" \; \
+  :::: "$dwf_node_sequence_file"
+any_errors=$(count_script_errors node "run_reg_perl.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Note: Encountered $any_errors errors while generating Perl results.  Continuing; the Perl modules are experimental for purposes of the differencing workflow." >&2
 fi
 
 
 #Create the deltas dataset for the whole sequence
-logandrunscript "$final_tarball_path" "$script_dirname/make_sequence_deltas.sh" sequence
-any_errors=$(count_script_errors sequence "make_sequence_deltas.sh")
+logandrunscript graph "$final_tarball_path" "$script_dirname/make_sequence_deltas.sh"
+any_errors=$(count_script_errors graph "make_sequence_deltas.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Error: Something went wrong aggregating the sequence results into SQLite.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   exit 1
@@ -628,8 +616,8 @@ fi
 
 
 #Export the results to Postgres
-logandrunscript "$final_tarball_path" "$script_dirname/export_sqlite_to_postgres.sh" sequence
-any_errors=$(count_script_errors sequence "export_sqlite_to_postgres.sh")
+logandrunscript graph "$final_tarball_path" "$script_dirname/export_sqlite_to_postgres.sh"
+any_errors=$(count_script_errors graph "export_sqlite_to_postgres.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Error: Something went wrong exporting the SQLite to Postgres.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   echo "Warning: At this point you probably need to delete some records from Postgres.  See the error log for export_sqlite_to_postgres.sh, there are some DELETE statements pre-built." >&2
