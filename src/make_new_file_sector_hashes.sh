@@ -9,10 +9,9 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 source "${script_dir}/_pick_pythons.sh"
 
 dwf_output_dir="$2"
-source "$script_dir/_results_sequences.sh"
 
 input_dfxml="${dwf_output_dir}/../make_differential_dfxml_prior.sh/deltas.dfxml"
-input_disk_image="${dwf_tarball_results_dirs[$dwf_tarball_results_dirs_index_current]}/invoke_vmdk_to_E01.sh/out.E01"
+input_disk_image="${dwf_all_results_root}/by_node/${node_id1}/invoke_vmdk_to_E01.sh/out.E01"
 
 "$PYTHON3" "${script_dir}/hash_sectors.py" \
   --debug \

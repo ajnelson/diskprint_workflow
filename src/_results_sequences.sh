@@ -1,46 +1,43 @@
 #!/bin/bash
 
 #This script expects these variables:
+# * dwf_sequence_id
 # * dwf_node_sequence_file (should be defined in do_difference_workflow.sh)
-# * dwf_output_dir
+# * node_id1
 # * dwf_all_results_root
-#This script relaxes some sanity checks if the variable TESTING_RESULTS_SEQUENCES == 'yes'.
+# * node_id0 (Predecessor to node_id1 in the sequence; blank if no predecessor)
+
 #See "#Definitions" to get the list of variables this module produces.
+
+#This script relaxes some sanity checks if the variable TESTING_RESULTS_SEQUENCES == 'yes'.
 
 #Sanity check variable
 INSANE_DIR_COUNT=50
 
 if [ "x$dwf_all_results_root" == "x" ]; then
-  echo "Error: _results_sequences.sh: need the variable '\$dwf_all_results_root' to be defined." >&2
+  echo "ERROR:_results_sequences.sh:Need the variable '\$dwf_all_results_root' to be defined." >&2
   exit 1
 fi
 
 if [ ! -d "$dwf_all_results_root" ]; then
   if [ "x$TESTING_RESULTS_SEQUENCES" != "xyes" ]; then
-    echo "Error: _results_sequences.sh: '\$dwf_all_results_root' ($dwf_all_results_root) is not a directory." >&2
+    echo "ERROR:_results_sequences.sh:'\$dwf_all_results_root' ($dwf_all_results_root) is not a directory." >&2
     exit 1
   fi
 fi
 
-if [ "x$dwf_output_dir" == "x" ]; then
-  echo "Error: _results_sequences.sh: need the variable '\$dwf_output_dir' to be defined." >&2
+if [ "x$node_id1" == "x" ]; then
+  echo "ERROR:_results_sequences.sh:Need the variable '\$node_id1' to be defined." >&2
   exit 1
 fi
 
-if [ ! -d "$dwf_output_dir" ]; then
-  if [ "x$TESTING_RESULTS_SEQUENCES" != "xyes" ]; then
-    echo "Error: _results_sequences.sh: \$dwf_output_dir' ($dwf_output_dir) is not a directory." >&2
-    exit 1
-  fi
-fi
-
 if [ "x$dwf_node_sequence_file" == "x" ]; then
-  echo "Error: _results_sequences.sh: need the variable '\$dwf_node_sequence_file' to be defined." >&2
+  echo "ERROR:_results_sequences.sh:Need the variable '\$dwf_node_sequence_file' to be defined." >&2
   exit 1
 fi
 
 if [ ! -r "$dwf_node_sequence_file" ]; then
-  echo "Error: _results_sequences.sh: '\$dwf_node_sequence_file' ($dwf_node_sequence_file) is not a readable file." >&2
+  echo "ERROR:_results_sequences.sh:'\$dwf_node_sequence_file' ($dwf_node_sequence_file) is not a readable file." >&2
   exit 1
 fi
 
@@ -54,6 +51,7 @@ dwf_node_sequence_index_end=-1
 dwf_node_sequence_index_current=-1  #Exported variable - current node
 dwf_node_sequence_index_previous=-1  #Exported variable - previous node
 dwf_node_sequence_index_next=-1
+node_id0=  #This remains blank if dwf_node_sequence_index_previous == -1
 
 while read x; do
   dwf_node_sequence[$dwf_node_sequence_index]="${x}"
@@ -62,7 +60,7 @@ while read x; do
   #Sanity check: The results directory is actually a directory
   if [ ! -d "${dwf_node_result_sequence[$dwf_node_sequence_index_current]}" ]; then
     if [ "x$TESTING_RESULTS_SEQUENCES" != "xyes" ]; then
-      echo "ERROR:_results_sequences.sh: '$dwf_node_sequence_file' supplied a results directory that is not actually a directory." >&2
+      echo "ERROR:_results_sequences.sh:'$dwf_node_sequence_file' supplied a results directory that is not actually a directory." >&2
       exit 1
     fi
   fi
@@ -80,7 +78,7 @@ while read x; do
 
   #Sanity check
   if [ $dwf_node_sequence_index -ge $INSANE_DIR_COUNT ]; then
-    echo "ERROR:_results_sequences.sh: array index has grown to $INSANE_DIR_COUNT.  This is assumed to be an error.  Inspect the contents of '$dwf_node_sequence_file', or relax this check." >&2
+    echo "ERROR:_results_sequences.sh:Array index has grown to $INSANE_DIR_COUNT.  This is assumed to be an error.  Inspect the contents of '$dwf_node_sequence_file', or relax this check." >&2
     exit 1
   fi
 done <"$dwf_node_sequence_file"
@@ -92,4 +90,8 @@ if [ $dwf_node_sequence_index_current -ge 0 ]; then
   if [ $dwf_node_sequence_index_next -gt $dwf_node_sequence_index_end ]; then
     dwf_node_sequence_index_next=-1
   fi
+fi
+
+if [ $dwf_node_sequence_index_previous > -1 ]; then
+  node_id0="${dwf_node_sequence[$dwf_node_sequence_index_previous]}"
 fi
