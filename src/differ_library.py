@@ -35,7 +35,6 @@ def db_conn_from_config_path(cfg_path):
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     return (conn, cursor)
 
-#TODO Remove all references to split_sequence_id.
 def split_node_id(node_id_string):
     parts = node_id_string.split("-")
     try:
@@ -47,59 +46,6 @@ def split_node_id(node_id_string):
     appetid = "-".join(parts[2:4])
     sliceid = int(parts[4])
     return (osetid, appetid, sliceid)
-
-#TODO Probably scrap this function too.
-def tarball_sequence_from_sequence_triplet(cursor, sequence_triplet):
-    start_slicehash = None
-    end_slicehash = None
-    sequence_id_parts = split_sequence_id(sequence_triplet)
-    sql_get_bounding_hashes = """\
-SELECT
-  start_slicehash, end_slicehash
-FROM
-  diskprint.sequence AS sequence
-WHERE
-  sequence.osetid = %s AND
-  sequence.appetid = %s AND
-  sequence.sequenceid = %s
-;"""
-    cursor.execute(sql_get_bounding_hashes, sequence_id_parts)
-    rows = [row for row in cursor]
-    if len(rows) != 1:
-        raise Exception("Unexpected results (%d rows, should be 1) from this query and these parameters: \n%s;\nParameters: %r." % (len(rows), sql_get_bounding_hashes, sequence_id_parts))
-    start_slicehash = rows[0]["start_slicehash"]
-    end_slicehash = rows[0]["end_slicehash"]
-
-    #TODO I forget if there's a more efficient way to run a segment query with joins...pretty sure there is, given RDF query patterns.
-    paths = []
-    current_end_hash = end_slicehash
-    sql_get_name_and_prev = """\
-SELECT DISTINCT
-  slicelineage.slicehash,
-  slicelineage.predecessor_slicehash,
-  storage.location
-FROM
-  diskprint.slicelineage AS slicelineage,
-  diskprint.storage AS storage
-WHERE
-  storage.slicehash = slicelineage.slicehash AND
-  slicelineage.slicehash = %s
-;"""
-    while True:
-        cursor.execute(sql_get_name_and_prev, (current_end_hash,))
-        rows = [row for row in cursor]
-        if len(rows) != 1:
-            _logger.debug("Row data:")
-            for (row_no, row) in enumerate(rows):
-                _logger.debug("%d\t%r" % (row_no, row))
-            raise Exception("Unexpected results (%d rows, should be 1) from this query and these parameters: \n%s;\nParameters:%r." % (len(rows), sql_get_name_and_prev, (end_slicehash,)))
-        paths.append(rows[0]["location"])
-        if rows[0]["slicehash"] == start_slicehash:
-            #Done.
-            break
-        current_end_hash = rows[0]["predecessor_slicehash"]
-    paths.reverse()
-    return paths
 
 def get_sequence_id_from_label(cursor, sequencelabel):
     """This function gets the numeric sequence identifier for a sequence label.  If one does not exist in the database, None is returned."""
