@@ -447,7 +447,7 @@ if [ $any_errors -gt 0 ]; then
   exit 1
 fi
 #(This next variable is hard-coded between here and the make_sequence_list.sh script.)
-export dwf_node_sequence_file="${dwf_all_results_root}/by_graph/make_sequence_list.sh/sequence_nodes.txt"
+export dwf_node_sequence_file="${dwf_all_results_root}/by_graph/${dwf_sequence_id}/make_sequence_list.sh/sequence_nodes.txt"
 
 #Bail out if any errors were found in the loop.
 if [ $any_errors -gt 0 ]; then
