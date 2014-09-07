@@ -28,7 +28,7 @@ def main():
     #Fetch work queue
     query = """
 SELECT DISTINCT
-  sequenceid
+  sequencelabel
 FROM
   diskprint.namedsequence
 ;"""
@@ -37,7 +37,7 @@ FROM
     inrows = [row for row in incursor]
 
     for inrow in inrows:
-        print(inrow["sequenceid"])
+        print(inrow["sequencelabel"])
 
     if len(inrows) == 0:
         _logger.info("No diskprints to process.")
