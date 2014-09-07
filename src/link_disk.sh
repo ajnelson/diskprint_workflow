@@ -10,7 +10,7 @@ source "${script_dir}/_pick_pythons.sh"
 node_id="$1"
 dwf_output_dir="$2"
 
-disk_image_path="$("$PYTHON3" "${script_dir}/fetch_node_data.py" disk "$node_id")"
+disk_image_path="$("$PYTHON3" "${script_dir}/fetch_node_data.py" --config="$DIFFER_CONFIG" disk "$node_id")"
 
 if [ ! -r "$disk_image_path" ]; then
   echo "ERROR:$(basename $0):Disk image path retrieved from database is not a readable file." >&2
