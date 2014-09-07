@@ -22,4 +22,4 @@ else
   maybe_debug=--debug
 fi
 
-"$PYTHON2" "$script_dir/lineage_librarian.py" $maybe_debug --config="$DIFFER_CONFIG" >"$outfile"
+"$PYTHON2" "$script_dir/lineage_librarian.py" $maybe_debug --config="$DIFFER_CONFIG" list_nodes >"$outfile"
