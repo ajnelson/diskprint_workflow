@@ -230,7 +230,7 @@ if [ $parallel_all -eq 1 ]; then
   if [ $report_pidlog -eq 1 ]; then
     parg_report_pidlog="--report-pidlog"
   fi
-  ./sliceprocessor.py --config "$DIFFER_CONFIG" --tails_only | \
+  ./sliceprocessor.py --config "$DIFFER_CONFIG" | \
     parallel --quote -j1 \
       "$0" "$parg_report_pidlog" "$parg_re_export" --cleanup ignore -j $num_jobs --config "$DIFFER_CONFIG" --quiet {} "$@"
   exit 0
