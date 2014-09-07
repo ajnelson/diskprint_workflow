@@ -4,7 +4,7 @@
 This program prints a single path to a requested node data component.  For instance, pass 'disk 123-4-567-8-90' to get the path to the disk image file of node_id 123-4-etc.
 """
 
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 
 import logging
 import os
@@ -25,17 +25,17 @@ SELECT
 FROM
   diskprint.storage
 WHERE
-  filetype = ? AND
-  osetid = ? AND
-  appetid = ? AND
-  sliceid = ?
+  filetype = %s AND
+  osetid = %s AND
+  appetid = %s AND
+  sliceid = %s
 """, (args.component, osetid, appetid, sliceid))
     rows = [row for row in cursor]
 
     if len(rows) > 1:
-        _logger.debug("osetid = %r." % )
-        _logger.debug("appetid = %r." % )
-        _logger.debug("sliceid = %r." % )
+        _logger.debug("osetid = %r." % osetid)
+        _logger.debug("appetid = %r." % appetid)
+        _logger.debug("sliceid = %r." % sliceid)
         _logger.debug("component = %r." % args.component)
         raise ValueError("Retrieved %d rows from database; expecting at most 1.")
 
@@ -49,9 +49,8 @@ if __name__ == "__main__":
     parser.add_argument("--debug", help="Turn on debug-level logging.", action="store_true")
     parser.add_argument("component", help="One of 'disk', 'ram', 'pcap'.")
     parser.add_argument("node_id", help="osetid-appetid-sliceid.")
-    #Check args so far to see if we need another.
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO
+    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
     main()
