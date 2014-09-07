@@ -269,7 +269,7 @@ function exit_trap() {
   if [ $_RC -eq 0 ]; then
     echo "Done." >&2
   else
-    echo "ERROR:$script_basename:Script process $$ exiting unsuccessfully from line $_LINENO, exit status $_RC. Input tarball was $final_tarball_path." >&2
+    echo "ERROR:$script_basename:Script process $$ exiting unsuccessfully from line $_LINENO, exit status $_RC." >&2
     echo $_RC >"$script_status_log"
   fi
   exit $_RC
