@@ -13,7 +13,7 @@ if [ "x$maybe_alloc_only" == "xyes" ]; then
   alloc_flag="-O"
 fi
 
-path_to_e01="${dwf_output_dir}/../invoke_vmdk_to_E01.sh/out.E01"
+path_to_e01="${dwf_output_dir}/../link_disk.sh/disk.E01"
 path_to_dfxml="${dwf_output_dir}/fiout.dfxml"
 
 fiwalk -G0 $alloc_flag -X"$path_to_dfxml" "$path_to_e01"

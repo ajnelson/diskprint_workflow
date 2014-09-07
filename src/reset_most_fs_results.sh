@@ -34,13 +34,14 @@ case $2 in
 esac
 
 #Preserving these scripts:
-# * invoke_vmdk_to_E01.sh
+# * (none)
 
 for x in \
   check_tarball_is_sequence_end.sh \
   do_difference_workflow.sh \
   export_sqlite_to_postgres.sh \
   invoke_regxml_extractor.sh \
+  link_disk.sh \
   make_differential_dfxml_baseline.sh \
   make_differential_dfxml_prior.sh \
   make_fiwalk_dfxml_all.sh \

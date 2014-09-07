@@ -456,6 +456,20 @@ if [ $any_errors -gt 0 ]; then
 fi
 
 
+#Link the disk images.
+$my_inorder_parallel \
+  echo "Note: Linking disk images for \"{}\"." \>\&2 \; \
+  logandrunscript node "$script_dirname/link_disk.sh" {} \; \
+  :::: "$dwf_node_sequence_file"
+any_errors=$(count_script_errors node "link_disk.sh")
+
+#Bail out if any errors were found in the loop.
+if [ $any_errors -gt 0 ]; then
+  echo "Note: Encountered $any_errors errors in the disk image linking loop.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
+  exit 1
+fi
+
+
 #Create Fiwalk DFXML, including unallocated content.
 $my_inorder_parallel \
   echo "Note: Starting Fiwalk all-files processing for \"{}\"." \>\&2 \; \
