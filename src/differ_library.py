@@ -1,5 +1,5 @@
 
-__version__ = "0.2.4"
+__version__ = "0.3.0"
 
 import os
 import sys
@@ -28,25 +28,27 @@ def db_conn_from_config_path(cfg_path):
         raise Exception("Unable to find database password file: %r." % pwfilepath)
     configrootdict["DBpassword"] = open(pwfilepath, "r").read().strip()                                           
     
-    conn_string = "host='%(DBserverIP)s' dbname='%(DBname)s' user='%(DBusername)s' password='%(DBpassword)s'" % configrootdict                                                                                                              
+    conn_string = "host='%(DBserverIP)s' dbname='%(DBname)s' user='%(DBusername)s' password='%(DBpassword)s'" % configrootdict
     #_logger.debug("conn_string: \"%s\"." % conn_string)
     conn = psycopg2.connect(conn_string)
     conn.autocommit = True                                                                                            
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     return (conn, cursor)
 
-def split_sequence_id(sequence_id_string):
-    parts = sequence_id_string.split("-")
+#TODO Remove all references to split_sequence_id.
+def split_node_id(node_id_string):
+    parts = node_id_string.split("-")
     try:
         assert len(parts) == 5
     except AssertionError as e:
-        _logger.error("Unexpected format of sequence_id_string: %r" % sequence_id_string)
+        _logger.error("Unexpected format of node id string: %r" % sequence_id_string)
         raise
     osetid = "-".join(parts[0:2])
     appetid = "-".join(parts[2:4])
-    sequenceid = int(parts[4])
-    return (osetid, appetid, sequenceid)
+    sliceid = int(parts[4])
+    return (osetid, appetid, sliceid)
 
+#TODO Probably scrap this function too.
 def tarball_sequence_from_sequence_triplet(cursor, sequence_triplet):
     start_slicehash = None
     end_slicehash = None
@@ -98,6 +100,36 @@ WHERE
         current_end_hash = rows[0]["predecessor_slicehash"]
     paths.reverse()
     return paths
+
+def get_sequence_id_from_label(cursor, sequencelabel):
+    """This function gets the numeric sequence identifier for a sequence label.  If one does not exist in the database, None is returned."""
+    cursor.execute("SELECT sequenceid FROM diskprint.namedsequenceid WHERE sequencelabel = %s;", (sequencelabel,))
+    rows = [row for row in cursor]
+    if len(rows) == 0:
+        return None
+    elif len(rows) > 1:
+        raise Exception("Uniqueness of sequencelabel violated; multiple entries exist for sequence label %r.  Please inspect." % sequencelabel)
+    return rows[0]["sequenceid"]
+
+def make_sequence_id_for_label(conn, cursor, sequencelabel):
+    """
+    This function gets the numeric sequence identifier for a sequence label.  If one does not exist in the database, one is created in the database and returned.
+
+    (Hence, this function has a potential side-effect in the database, but is idempotent.)
+    """
+    retval = get_sequence_id_from_label(cursor, sequencelabel)
+    if not retval is None:
+        _logger.debug("Sequence ID found.")
+        return retval
+    _logger.debug("Inserting label %r into namedsequenceid..." % sequencelabel)
+    cursor.execute("INSERT INTO diskprint.namedsequenceid(sequencelabel) VALUES (%s);", (sequencelabel,))
+    _logger.debug("Done inserting.  Committing...")
+    conn.commit()
+    _logger.debug("Done committing.")
+    retval = get_sequence_id_from_label(cursor, sequencelabel)
+    if retval is None:
+        raise Exception("Database could not retrieve label that should have just been inserted, %r.  Please inspect." % sequencelabel)
+    return retval
 
 #This 'main' logic is just for checking that the database is reachable with a given config file
 if __name__ == "__main__":
