@@ -21,7 +21,7 @@ my_readlink () {
 script_dirname="$(dirname $(my_readlink $0))"
 script_basename=$(basename "$0")
 
-usage="Usage: $script_basename [options] (--parallel-all OR final_tarball) results_root\n"
+usage="Usage: $script_basename [options] (--parallel-all OR sequence label) results_root\n"
 usage=$usage"Options:\n"
 usage=$usage"\t--cleanup {check (default), erase, list, ignore}\n"
 usage=$usage"\t  Handle erroneous results found under results_root: Check for any and prompt, erase without prompt, list and exit, or ignore.\n"
@@ -39,7 +39,7 @@ usage=$usage"\t--re-export\n"
 usage=$usage"\t  Re-run export step for specified sequence(s).\n"
 usage=$usage"\t--report-pidlog\n"
 usage=$usage"\t  Output a line of text that notes where this workflow instance's log is stored.  Ignores --quiet.\n"
-usage=$usage"Places results in \$results_root/\$final_tarball/$script_basename/\n"
+usage=$usage"Places results in \$results_root/by_graph/$script_basename/\n"
 usage=$usage"This script will probably occupy a core for a day.  If there are database errors, the relevant scripts' .err.log files will include SQL 'undo' statements.\n"
 
 usage_exit() {

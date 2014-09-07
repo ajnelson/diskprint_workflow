@@ -13,7 +13,7 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 #Define Pythons
 source "${script_dir}/_pick_pythons.sh"
 
-final_tarball_path="$1"
+graph_id="$1"
 outfile="$2/sequence_nodes.txt"
 
 if [ $debug -eq 0 ]; then
@@ -22,4 +22,4 @@ else
   maybe_debug=--debug
 fi
 
-"$PYTHON2" "$script_dir/lineage_librarian.py" $maybe_debug --config="$DIFFER_CONFIG" list_nodes >"$outfile"
+"$PYTHON2" "$script_dir/lineage_librarian.py" $maybe_debug --config="$DIFFER_CONFIG" list_nodes "$graph_id" >"$outfile"
