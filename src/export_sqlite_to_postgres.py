@@ -1,6 +1,6 @@
 #!/opt/local/bin/python2.7
 
-__version__ = "0.1.5"
+__version__ = "0.1.6"
 
 import os
 import sys
@@ -49,7 +49,7 @@ def main():
         outdict = dict()
         for k in inrow.keys():
             indict[k] = inrow[k]
-        for k in ["hivepath", "osetid", "appetid", "sequenceid"]:
+        for k in ["hivepath", "sequenceid"]:
             outdict[k] = inrow[k]
         #Inline function for maybe-once repetition
         def _fetch(od):
@@ -59,9 +59,9 @@ def main():
               FROM
                 diskprint.hive
               WHERE
-                hivepath = %s AND osetid = %s AND appetid = %s AND sequenceid = %s
+                hivepath = %s AND sequenceid = %s
               ;
-            """, (od["hivepath"], od["osetid"], od["appetid"], od["sequenceid"]))
+            """, (od["hivepath"], od["sequenceid"]))
             return [row for row in outcursor]
         #checkrows should ultimately have just one record in it from the database, from which we get the translated ID of the hive sequence (hiveid identifies sequences)
         checkrows = _fetch(outdict)
@@ -111,11 +111,11 @@ def main():
         for k in inrow.keys():
             outdict[k] = inrow[k]
         #Translate records
-        outdict["hiveid"] = in_to_out_hiveid.get(inrow["hiveid"])
+        outdict["sequenceid"] = inrow["sequenceid"]
         outdict["appetid"] = inrow["appetid"]
         outdict["osetid"] = inrow["osetid"]
-        outdict["sequenceid"] = inrow["sequenceid"]
         outdict["sliceid"] = inrow["sliceid"]
+        outdict["hiveid"] = in_to_out_hiveid.get(inrow["hiveid"])
         if outdict["hiveid"] is None:
             _logger.error("Failed to translate a hiveid: %r was not found." % inrow["hiveid"])
             _logger.info("Hive ID translation dictionary:\n\t%r" % in_to_out_hiveid)

@@ -14,8 +14,10 @@ import argparse
 import sqlite3
 import collections
 import logging
-import dfxml
 
+_logger = logging.getLogger(os.path.basename(__file__))
+
+import dfxml
 import differ_library
 
 """
@@ -32,15 +34,15 @@ def time_string_from_cell(cell):
     return None
         
 
-def sliceid_from_regxml_path(path):
+def nodeid_from_regxml_path(path):
     """
     This is a piece of fragile code.
     """
     assert path[0] == "/"  #Requires absolute path
     path_parts = path.split("/")
-    tarball_basename = path_parts[-3]
-    sliceid = int(tarball_basename.split(".")[0].split("-")[4])
-    return sliceid
+    nodeid = path_parts[-3]
+    (osetid, appetid, sliceid) = differ_library.split_node_id(nodeid)
+    return (osetid, appetid, sliceid)
 
 def main():
     global args
@@ -55,6 +57,11 @@ def main():
     import rdifference
     import rx_make_database
 
+    #Fetch sequenceid for the graph we're analyzing.
+    sequenceid = differ_library.get_sequence_id_from_label(args.graph_id)
+    if sequenceid is None:
+        raise Exception("graph_id is not in the namedsequenceid table: %r.  Please inspect." % args.graph_id)
+
     #Set up database
 
     #Table structure should be consistent with the diskprint_database repository's 00_load_diskprintdb.sql
@@ -64,16 +71,14 @@ def main():
         CREATE TABLE IF NOT EXISTS hive (
           hiveid NUMBER,
           hivepath TEXT,
-          osetid TEXT,
-          appetid TEXT,
           sequenceid NUMBER
         );
     """)
     outcur.execute("""
         CREATE TABLE IF NOT EXISTS regdelta (
+          sequenceid NUMBER,
           osetid TEXT,
           appetid TEXT,
-          sequenceid NUMBER,
           sliceid NUMBER,
           hiveid NUMBER,
           cellpath TEXT,
@@ -94,25 +99,35 @@ def main():
 
     #Build list of RegXML Extractor output directories
     re_dir_sequence = []
-    (conn, cursor) = differ_library.db_conn_from_config_path(args.config)
-    tarball_abs_paths = differ_library.tarball_sequence_from_sequence_triplet(cursor, args.sequence_id)
-    logging.debug("tarball_abs_paths = %r" % tarball_abs_paths)
-    for tarball_abs_path in tarball_abs_paths:
-        re_abs_path = args.dwf_all_results_root + "/slice" + tarball_abs_path + "/invoke_regxml_extractor.sh"
-        if not os.path.isdir(re_abs_path):
-            raise Exception("Path in input file is not directory: %r." % re_abs_path)
+    #Get list of all nodes of the sequence
+    sequence_nodes_list = []
+    sequence_nodes_file_path = os.path.join(args.dwf_all_results_root, "by_graph/%s/make_sequence_list.sh/sequence_nodes.txt" % graph_id)
+    _logger.info("Fetching list of sequence nodes...")
+    _logger.debug("Node listing file: %r." % sequence_nodes_file_path)
+    with open(sequence_nodes_file_path, "r") as fh:
+        for line in fh:
+            sequence_nodes_list.append(line.strip())
+    _logger.info("Done fetching list of sequence nodes.")
+    for node in sequence_nodes_list:
+        re_dir_path = os.path.join(args.dwf_all_results_root, "by_node/%s/invoke_regxml_extractor.sh" % node)
         #TODO Test for logged success at re_abs_path + ".status.log"
-        re_dir_sequence.append(re_abs_path)
+        if not (os.path.isdir(re_dir_path)):
+            raise ValueError("This is not a RegXML Extractor output directory: %r." % re_dir_path)
+        re_dir_sequence.append(re_dir_path)
     if len(re_dir_sequence) == 0:
         raise Exception("The sequence should have a non-zero number of RegXML Extractor directories.")
 
-    logging.debug("re_dir_sequence = %r" % re_dir_sequence)
+    _logger.debug("re_dir_sequence = %r" % re_dir_sequence)
 
     #Establish DFXML sequences
     #TODO
 
     #Establish RegXML sequences
+
+    #Key: File system path within the subject disk images.
+    #Value: List of RegXML files pertaining to this file system path across the whole sequence.
     hive_file_histories = collections.defaultdict(list)
+
     #For now, require the anno database
     for rd in re_dir_sequence:
         logging.debug("Inspecting \"%s\"." % rd)
@@ -159,13 +174,10 @@ def main():
     local_hiveid_counter = 0
     for hive_fspath in hive_file_histories:
         local_hiveid_counter += 1
-        sequence_id_parts = differ_library.split_sequence_id(args.sequence_id)
         hiveid_record = {
           "hiveid": local_hiveid_counter,
           "hivepath": hive_fspath,
-          "osetid": sequence_id_parts[0],
-          "appetid": sequence_id_parts[1],
-          "sequenceid": sequence_id_parts[2]
+          "sequenceid": sequenceid
         }
         rx_make_database.insert_db(outcur, "hive", hiveid_record)
         outconn.commit()
@@ -185,6 +197,8 @@ def main():
                 logging.info("\t%d\tCells with changed properties" % len(s.changed_properties))
                 logging.info("(Changed content and properties are lumped together.)")
 
+                (frxp_osetid, frxp_appetid, frxp_sliceid) = nodeid_from_regxml_path(regxml_file)
+
                 #Output new cells
                 for cell in s.new_files:
                     #If possible, find the mtime of the parent in the old state
@@ -194,11 +208,11 @@ def main():
                         old_parent_cell = s.cnames.get(parent_path)
                         old_parent_mtime = time_string_from_cell(old_parent_cell)
                     regdelta_record = {
-                      "osetid": hiveid_record["osetid"],
-                      "appetid": hiveid_record["appetid"],
                       "sequenceid": hiveid_record["sequenceid"],
-                      "sliceid": sliceid_from_regxml_path(regxml_file),
-                      "hiveid": local_hiveid_counter,
+                      "osetid": frxp_osetid,
+                      "appetid": frxp_appetid,
+                      "sliceid": frxp_sliceid,
+                      "hiveid": hiveid_record["hiveid"],
                       "cellpath": cell.full_path(),
                       "cellaction": "created",
                       "parentmtimebefore": old_parent_mtime,
@@ -224,11 +238,11 @@ def main():
                         new_parent_cell = s.new_cnames.get(parent_path)
                         new_parent_mtime = time_string_from_cell(new_parent_cell)
                     regdelta_record = {
-                      "osetid": hiveid_record["osetid"],
-                      "appetid": hiveid_record["appetid"],
                       "sequenceid": hiveid_record["sequenceid"],
-                      "sliceid": sliceid_from_regxml_path(regxml_file),
-                      "hiveid": local_hiveid_counter,
+                      "osetid": frxp_osetid,
+                      "appetid": frxp_appetid,
+                      "sliceid": frxp_sliceid,
+                      "hiveid": hiveid_record["hiveid"],
                       "cellpath": ocell.full_path(),
                       "cellaction": "removed",
                       "parentmtimebefore": time_string_from_cell(ocell.parent_key),
@@ -254,11 +268,11 @@ def main():
                     if cell.full_path() in changed_properties_noted:
                       continue
                     regdelta_record = {
-                      "osetid": hiveid_record["osetid"],
-                      "appetid": hiveid_record["appetid"],
                       "sequenceid": hiveid_record["sequenceid"],
-                      "sliceid": sliceid_from_regxml_path(regxml_file),
-                      "hiveid": local_hiveid_counter,
+                      "osetid": frxp_osetid,
+                      "appetid": frxp_appetid,
+                      "sliceid": frxp_sliceid,
+                      "hiveid": hiveid_record["hiveid"],
                       "cellpath": cell.full_path(),
                       "cellaction": "property updated",
                       "parentmtimebefore": time_string_from_cell(ocell.parent_key),
@@ -281,7 +295,7 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create a SQLite database of file system and registry differences as found by RegXML Extractor.  Meant to be run on a single sequence of disk images processed by RegXML Extractor.")
     parser.add_argument("dwf_all_results_root", help="Absolute path to the Diskprints workflow results root.")
-    parser.add_argument("sequence_id", help="Identifier for the target analysis sequence, formatted as osetid-appetid-sequenceid.")
+    parser.add_argument("graph_id", help="Label of the named sequence.")
     parser.add_argument("--with-script-path", help="Directory where installed rx_make_database.py, idifference.py and rdifference.py reside.")
     parser.add_argument("--config", help="Configuration file", default="differ.cfg")
     parser.add_argument("-d", "--debug", action="store_true", help="Enable debug printing.")
