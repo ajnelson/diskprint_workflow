@@ -246,7 +246,7 @@ export dwf_sequence_id
 outdir_per_sequence="${results_root_path}/by_graph/${dwf_sequence_id}"
 
 #Ensure we have an output directory
-workflow_script_outdir="${outdir_per_sequence}/by_graph/${script_basename}"
+workflow_script_outdir="${outdir_per_sequence}/${script_basename}"
 
 #Set up logging
 mkdir -p "${workflow_script_outdir}" || exit 1
