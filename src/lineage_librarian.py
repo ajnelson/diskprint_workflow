@@ -3,7 +3,7 @@
 Produces a sequence list for the given sequence-identifying triplet.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 import os
 import sys
@@ -14,73 +14,34 @@ import differ_library
 def list_ids(conn, cursor):
     sql_get_ids = """\
 SELECT DISTINCT
-  sequence_id
+  sequencelabel
 FROM
   diskprint.namedsequence
 ORDER BY
-  sequence_id
+  sequencelabel
 ;"""
     cursor.execute(sql_get_ids)
     rows = [row for row in cursor]
     for row in rows:
-        print(row["sequence_id"])
+        print(row["sequencelabel"])
 
-def list_ids(conn, cursor, sequence_id):
+def list_nodes(conn, cursor, sequencelabel):
     sql_get_nodes = """\
 SELECT
-  ns.sequence_id,
-  ns.osetid,
-  ns.appetid,
-  ns.sliceid,
-  sld.location AS disklocation,
-  slr.location AS ramlocation,
-  slp.location AS pcaplocation
+  sequencelabel,
+  osetid,
+  appetid,
+  sliceid
 FROM
-  diskprint.namedsequence AS ns,
-  (
-    SELECT
-      sl.osetid, sl.appetid, sl.sliceid, st.location
-    FROM
-      diskprint.slice AS sl,
-      diskprint.storage AS st
-    WHERE
-      sl.diskhash = st.hash
-  ) AS sld,
-  (
-    SELECT
-      sl.osetid, sl.appetid, sl.sliceid, st.location
-    FROM
-      diskprint.slice AS sl,
-      diskprint.storage AS st
-    WHERE
-      sl.ramhash = st.hash
-  ) AS slr,
-  (
-    SELECT
-      sl.osetid, sl.appetid, sl.sliceid, st.location
-    FROM
-      diskprint.slice AS sl,
-      diskprint.storage AS st
-    WHERE
-      sl.pcaphash = st.hash
-  ) AS slp
+  diskprint.namedsequence
 WHERE
-  ns.osetid  = sld.osetid AND
-  ns.appetid = sld.appetid AND
-  ns.sliceid = sld.sliceid AND
-  ns.osetid  = slr.osetid AND
-  ns.appetid = slr.appetid AND
-  ns.sliceid = slr.sliceid AND
-  ns.osetid  = slp.osetid AND
-  ns.appetid = slp.appetid AND
-  ns.sliceid = slp.sliceid AND
-  ns.sequence_id = %s
+  sequencelabel = %s
 ;"""
-    cursor.execute(sql_get_nodes)
+    cursor.execute(sql_get_nodes, (sequencelabel,))
     rows = [row for row in cursor]
     #AJN TODO This will need a better node's-data mechanism.  For now, though, we're just analyzing disks.
     for row in rows:
-        print(row["%s-%s-%s\t%s"])
+        print("%(osetid)s-%(appetid)s-%(sliceid)s" % row)
 
 def main():
     global args
