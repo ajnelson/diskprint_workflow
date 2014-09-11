@@ -1,5 +1,5 @@
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 import os
 import sys
@@ -40,7 +40,7 @@ def split_node_id(node_id_string):
     try:
         assert len(parts) == 5
     except AssertionError as e:
-        _logger.error("Unexpected format of node id string: %r" % sequence_id_string)
+        _logger.error("Unexpected format of node id string: %r" % node_id_string)
         raise
     osetid = "-".join(parts[0:2])
     appetid = "-".join(parts[2:4])
