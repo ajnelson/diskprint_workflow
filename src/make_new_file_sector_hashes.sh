@@ -11,7 +11,7 @@ source "${script_dir}/_pick_pythons.sh"
 dwf_output_dir="$2"
 
 input_dfxml="${dwf_output_dir}/../make_differential_dfxml_prior.sh/deltas.dfxml"
-input_disk_image="${dwf_all_results_root}/by_node/${node_id1}/link_disk.sh/disk.E01"
+input_disk_image="${dwf_all_results_root}/by_node/${node_id1}/link_disk.sh/disk0.E01"
 
 "$PYTHON3" "${script_dir}/hash_sectors.py" \
   --debug \
