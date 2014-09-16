@@ -4,7 +4,7 @@
 This program prints a single path to a requested node data component.  For instance, pass 'disk 123-4-567-8-90' to get the path to the disk image file of node_id 123-4-etc.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 import logging
 import os
@@ -19,7 +19,7 @@ def main():
 
     (osetid, appetid, sliceid) = differ_library.split_node_id(args.node_id)
 
-    cursor.execute("""
+    sql_fetch = """
 SELECT
   location
 FROM
@@ -29,15 +29,16 @@ WHERE
   osetid = %s AND
   appetid = %s AND
   sliceid = %s
-""", (args.component, osetid, appetid, sliceid))
+"""
+    cursor.execute(sql_fetch, (args.component, osetid, appetid, sliceid))
     rows = [row for row in cursor]
 
-    if len(rows) > 1:
+    if len(rows) != 1:
         _logger.debug("osetid = %r." % osetid)
         _logger.debug("appetid = %r." % appetid)
         _logger.debug("sliceid = %r." % sliceid)
         _logger.debug("component = %r." % args.component)
-        raise ValueError("Retrieved %d rows from database; expecting at most 1.")
+        raise ValueError("Retrieved %d rows from database; expecting at most 1." % len(rows))
 
     for row in rows:
         print(row["location"])
