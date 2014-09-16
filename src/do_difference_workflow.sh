@@ -18,8 +18,9 @@ my_readlink () {
 }
 
 #Document script
-script_dirname="$(dirname $(my_readlink $0))"
+dwf_script_dirname="$(dirname $(my_readlink $0))"
 script_basename=$(basename "$0")
+export dwf_script_dirname
 
 usage="Usage: $script_basename [options] (--parallel-all OR sequence label) results_root\n"
 usage=$usage"Options:\n"
@@ -49,7 +50,7 @@ usage_exit() {
 
 #Set defaults
 GNU_GETOPT=/opt/local/bin/getopt
-DIFFER_CONFIG="${script_dirname}/differ.cfg"
+DIFFER_CONFIG="${dwf_script_dirname}/differ.cfg"
 cleanup=check
 num_jobs=0
 parallel_all=0
@@ -153,7 +154,7 @@ export dwf_all_results_root="$results_root_path"
 export DIFFER_CONFIG="$(my_readlink $DIFFER_CONFIG)"
 #echo "Debug: $script_basename: \$DIFFER_CONFIG = $DIFFER_CONFIG" >&2
 
-export dwf_dfxml_schema="$script_dirname/../deps/dfxml_schema.git/dfxml.xsd"
+export dwf_dfxml_schema="$dwf_script_dirname/../deps/dfxml_schema.git/dfxml.xsd"
 #echo "DEBUG:${script_basename}:\$dwf_dfxml_schema = $dwf_dfxml_schema" >&2
 
 #Call this function to list all of the directories and logs of scripts with erroneous output under the results root path
@@ -334,9 +335,10 @@ logandrunscript () {
   elif [ "$analysis_type" == "edge" ]; then
     node_id1="$3"
 
-    source "${script_dirname}/_results_sequences.sh"
+    source "${dwf_script_dirname}/_results_sequences.sh"
     if [ -z "${node_id0}" ]; then
       #This script was called for the baseline of the sequence.  There is no differencing to be done.
+      echo "DEBUG:${script_basename}:logandrunscript:Did not find predecessor node in edge." >&2
       return 0
     fi
 
@@ -440,7 +442,7 @@ my_inorder_parallel="parallel --keep-order -j$num_jobs"
 
 
 #Create the sequence list.
-logandrunscript graph "$script_dirname/make_sequence_list.sh" "$dwf_sequence_id"
+logandrunscript graph "$dwf_script_dirname/make_sequence_list.sh" "$dwf_sequence_id"
 any_errors=$(count_script_errors graph "make_sequence_list.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Note: Something went wrong making the sequence list.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
@@ -459,7 +461,7 @@ fi
 #Link the disk images.
 $my_inorder_parallel \
   echo "Note: Linking disk images for \"{}\"." \>\&2 \; \
-  logandrunscript node "$script_dirname/link_disk.sh" {} \; \
+  logandrunscript node "$dwf_script_dirname/link_disk.sh" {} \; \
   :::: "$dwf_node_sequence_file"
 any_errors=$(count_script_errors node "link_disk.sh")
 
@@ -473,7 +475,7 @@ fi
 #Create Fiwalk DFXML, including unallocated content.
 $my_inorder_parallel \
   echo "Note: Starting Fiwalk all-files processing for \"{}\"." \>\&2 \; \
-  logandrunscript node "$script_dirname/make_fiwalk_dfxml_all.sh" {} \; \
+  logandrunscript node "$dwf_script_dirname/make_fiwalk_dfxml_all.sh" {} \; \
   :::: "$dwf_node_sequence_file"
 any_errors=$(count_script_errors node "make_fiwalk_dfxml_all.sh")
 
@@ -487,7 +489,7 @@ fi
 #Create Fiwalk DFXML output directories after all E01 output's successfully done
 $my_inorder_parallel \
   echo "Note: Starting Fiwalk allocated-only processing for \"{}\"." \>\&2 \; \
-  logandrunscript node "$script_dirname/make_fiwalk_dfxml_alloc.sh" {} \; \
+  logandrunscript node "$dwf_script_dirname/make_fiwalk_dfxml_alloc.sh" {} \; \
   :::: "$dwf_node_sequence_file"
 any_errors=$(count_script_errors node "make_fiwalk_dfxml_alloc.sh")
 
@@ -501,13 +503,13 @@ fi
 #Try validating Fiwalk output with DFXML schema
 $my_inorder_parallel \
   echo "Note: Validating Fiwalk allocated-only results from \"{}\"." \>\&2 \; \
-  logandrunscript node "$script_dirname/validate_fiwalk_dfxml_alloc.sh" {} \; \
+  logandrunscript node "$dwf_script_dirname/validate_fiwalk_dfxml_alloc.sh" {} \; \
   :::: "$dwf_node_sequence_file"
 any_errors=$(count_script_errors node "validate_fiwalk_dfxml_alloc.sh")
 
 $my_inorder_parallel \
   echo "Note: Validating Fiwalk all-files results from \"{}\"." \>\&2 \; \
-  logandrunscript node $script_dirname/validate_fiwalk_dfxml_all.sh" {} "\; \
+  logandrunscript node $dwf_script_dirname/validate_fiwalk_dfxml_all.sh" {} "\; \
   :::: "$dwf_node_sequence_file"
 any_errors=$(count_script_errors node "validate_fiwalk_dfxml_all.sh")
 
@@ -517,15 +519,15 @@ any_errors=$(count_script_errors node "validate_fiwalk_dfxml_all.sh")
 #Create differential DFXML output directories after all Fiwalk output is successfully done
 $my_inorder_parallel \
   echo "Note: Starting differential DFXML processing, vs. baseline, for \"{}\"." \>\&2 \; \
-  logandrunscript edge $script_dirname/make_differential_dfxml_baseline.sh" {} "\; \
+  logandrunscript edge $dwf_script_dirname/make_differential_dfxml_baseline.sh" {} "\; \
   :::: "$dwf_node_sequence_file"
 any_errors=$(count_script_errors edge "make_differential_dfxml_baseline.sh")
 
 $my_inorder_parallel \
   echo "Note: Starting differential DFXML processing, vs. previous image, for \"{}\"." \>\&2 \; \
-  logandrunscript edge "$script_dirname/make_differential_dfxml_prior.sh" {} \; \
+  logandrunscript edge "$dwf_script_dirname/make_differential_dfxml_prior.sh" {} \; \
   :::: "$dwf_node_sequence_file"
-any_errors=$(count_script_errors node "make_differential_dfxml_prior.sh")
+any_errors=$(count_script_errors edge "make_differential_dfxml_prior.sh")
 
 #Tolerate errors with from-baseline differential DFXML processing for now.
 #However, the from-prior differential DFXML feeds into another script, so check it for errors.
@@ -539,7 +541,7 @@ fi
 #Create sector hashes of new files
 $my_inorder_parallel \
   echo "Note: Starting new-file sector hashing \"{}\"." \>\&2 \; \
-  logandrunscript edge "$script_dirname/make_new_file_sector_hashes.sh" {} \; \
+  logandrunscript edge "$dwf_script_dirname/make_new_file_sector_hashes.sh" {} \; \
   :::: "$dwf_node_sequence_file"
 any_errors=$(count_script_errors edge "make_new_file_sector_hashes.sh")
 
@@ -550,7 +552,7 @@ any_errors=$(count_script_errors edge "make_new_file_sector_hashes.sh")
 #Create RDS-formatted output from Fiwalk DFXML
 $my_inorder_parallel \
   echo "Note: Starting RDS re-formatting for \"{}\"." \>\&2 \; \
-  logandrunscript edge "$script_dirname/make_rds_format.sh" {} \; \
+  logandrunscript edge "$dwf_script_dirname/make_rds_format.sh" {} \; \
   :::: "$dwf_node_sequence_file"
 any_errors=$(count_script_errors edge "make_rds_format.sh")
 
@@ -564,7 +566,7 @@ fi
 #Create CybOX-formatted output from RDS output
 $my_inorder_parallel \
   echo "Note: Starting CybOX re-formatting for \"{}\"." \>\&2 \; \
-  logandrunscript edge "$script_dirname/make_cybox_format.sh" {} \; \
+  logandrunscript edge "$dwf_script_dirname/make_cybox_format.sh" {} \; \
   :::: "$dwf_node_sequence_file"
 any_errors=$(count_script_errors edge "make_cybox_format.sh")
 
@@ -579,7 +581,7 @@ fi
 #(Creating per-image RE immediately after creating the E01 (and similarly with Fiwalk) means basically trying to integrate Make again: Suddenly, there's a piecemeal, per-tarball dependency graph that has to be defined. A Bash array could probably do it, but recovering from failure becomes tedious right-quick.)
 $my_inorder_parallel \
   echo "Note: Starting RegXML Extractor processing for \"{}\"." \>\&2 \; \
-  logandrunscript node "$script_dirname/invoke_regxml_extractor.sh" {} \; \
+  logandrunscript node "$dwf_script_dirname/invoke_regxml_extractor.sh" {} \; \
   :::: "$dwf_node_sequence_file"
 any_errors=$(count_script_errors node "invoke_regxml_extractor.sh")
 
@@ -593,7 +595,7 @@ fi
 #Insert Perl module results; non-critical for now.
 $my_inorder_parallel \
   echo "Note: Starting Perl modules on RegXML Extractor hives for \"{}\"." \>\&2 \; \
-  logandrunscript node "$script_dirname/run_reg_perl.sh" {} \; \
+  logandrunscript node "$dwf_script_dirname/run_reg_perl.sh" {} \; \
   :::: "$dwf_node_sequence_file"
 any_errors=$(count_script_errors node "run_reg_perl.sh")
 if [ $any_errors -gt 0 ]; then
@@ -602,7 +604,7 @@ fi
 
 
 #Create the deltas dataset for the whole sequence
-logandrunscript graph "$script_dirname/make_sequence_deltas.sh" "$dwf_sequence_id" 
+logandrunscript graph "$dwf_script_dirname/make_sequence_deltas.sh" "$dwf_sequence_id"
 any_errors=$(count_script_errors graph "make_sequence_deltas.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Error: Something went wrong aggregating the sequence results into SQLite.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
@@ -611,7 +613,7 @@ fi
 
 
 #Export the results to Postgres
-logandrunscript graph "$script_dirname/export_sqlite_to_postgres.sh" "$dwf_sequence_id" 
+logandrunscript graph "$dwf_script_dirname/export_sqlite_to_postgres.sh" "$dwf_sequence_id"
 any_errors=$(count_script_errors graph "export_sqlite_to_postgres.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Error: Something went wrong exporting the SQLite to Postgres.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
