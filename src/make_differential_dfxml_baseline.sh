@@ -4,5 +4,5 @@
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 
 #Override.
-node_id0="${dwf_node_sequence[0]}"
+from_baseline=1
 source "${script_dir}/_make_differential_dfxml.sh"
