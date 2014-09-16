@@ -58,7 +58,7 @@ while read x; do
   dwf_node_result_sequence[$dwf_node_sequence_index]="${dwf_all_results_root}/by_node/${x}"
 
   #Sanity check: The results directory is actually a directory
-  if [ ! -d "${dwf_node_result_sequence[$dwf_node_sequence_index_current]}" ]; then
+  if [ ! -d "${dwf_node_result_sequence[$dwf_node_sequence_index]}" ]; then
     if [ "x$TESTING_RESULTS_SEQUENCES" != "xyes" ]; then
       echo "ERROR:_results_sequences.sh:'$dwf_node_sequence_file' supplied a results directory that is not actually a directory." >&2
       exit 1
@@ -67,7 +67,7 @@ while read x; do
 
   #Track the current index, based on the requested output directory.
   #Pattern-matching syntax ref: http://www.cyberciti.biz/faq/bash-find-out-if-variable-contains-substring/
-  if [[ $dwf_output_dir = *$x* ]]
+  if [[ $node_id1 = *$x* ]]
   then
     dwf_node_sequence_index_current=$dwf_node_sequence_index
   fi
@@ -92,6 +92,13 @@ if [ $dwf_node_sequence_index_current -ge 0 ]; then
   fi
 fi
 
-if [ $dwf_node_sequence_index_previous > -1 ]; then
+echo "DEBUG:_results_sequences.sh:\$node_id1 = $node_id1" >&2
+echo "DEBUG:_results_sequences.sh:\$dwf_node_sequence_index = $dwf_node_sequence_index" >&2
+echo "DEBUG:_results_sequences.sh:\$dwf_node_sequence_index_end = $dwf_node_sequence_index_end" >&2
+echo "DEBUG:_results_sequences.sh:\$dwf_node_sequence_index_current = $dwf_node_sequence_index_current" >&2
+echo "DEBUG:_results_sequences.sh:\$dwf_node_sequence_index_previous = $dwf_node_sequence_index_previous" >&2
+echo "DEBUG:_results_sequences.sh:\$dwf_node_sequence_index_next = $dwf_node_sequence_index_next" >&2
+
+if [ $dwf_node_sequence_index_previous -gt -1 ]; then
   node_id0="${dwf_node_sequence[$dwf_node_sequence_index_previous]}"
 fi
