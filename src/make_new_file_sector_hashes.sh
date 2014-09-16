@@ -8,6 +8,7 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 #Define Pythons
 source "${script_dir}/_pick_pythons.sh"
 
+node_id1="$1"
 dwf_output_dir="$2"
 
 input_dfxml="${dwf_output_dir}/../make_differential_dfxml_prior.sh/deltas.dfxml"
