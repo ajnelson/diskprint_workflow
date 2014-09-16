@@ -10,4 +10,4 @@ source "${script_dir}/_pick_pythons.sh"
 
 outdir="$2"
 
-"$PYTHON2" "${script_dir}/export_sqlite_to_postgres.py" --debug --config="$DIFFER_CONFIG" "${outdir}/../make_sequence_deltas.sh/registry_deltas.db"
+"$PYTHON2" "${script_dir}/export_sqlite_to_postgres.py" --debug --config="$DIFFER_CONFIG" "$dwf_sequence_id" "${outdir}/../make_sequence_deltas.sh/registry_deltas.db"

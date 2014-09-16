@@ -34,6 +34,11 @@ def main():
     inconn.row_factory = sqlite3.Row
     incursor = inconn.cursor()
 
+    #Fetch sequenceid for the graph we're analyzing.
+    sequenceid = differ_library.get_sequence_id_from_label(outcursor, args.graph_id)
+    if sequenceid is None:
+        raise Exception("graph_id is not in the namedsequenceid table: %r.  Please inspect." % args.graph_id)
+
     #Get translation dictionary for cell actions
     outcursor.execute("SELECT * FROM diskprint.cell;")
     action_text_to_id = dict()
@@ -49,8 +54,8 @@ def main():
         outdict = dict()
         for k in inrow.keys():
             indict[k] = inrow[k]
-        for k in ["hivepath", "sequenceid"]:
-            outdict[k] = inrow[k]
+        outdict["hivepath"] = inrow["hivepath"]
+        outdict["sequenceid"] = sequenceid
         #Inline function for maybe-once repetition
         def _fetch(od):
             outcursor.execute("""
@@ -61,7 +66,7 @@ def main():
               WHERE
                 hivepath = %s AND sequenceid = %s
               ;
-            """, (od["hivepath"], od["sequenceid"]))
+            """, (od["hivepath"], sequenceid))
             return [row for row in outcursor]
         #checkrows should ultimately have just one record in it from the database, from which we get the translated ID of the hive sequence (hiveid identifies sequences)
         checkrows = _fetch(outdict)
@@ -111,7 +116,7 @@ def main():
         for k in inrow.keys():
             outdict[k] = inrow[k]
         #Translate records
-        outdict["sequenceid"] = inrow["sequenceid"]
+        outdict["sequenceid"] = sequenceid
         outdict["appetid"] = inrow["appetid"]
         outdict["osetid"] = inrow["osetid"]
         outdict["sliceid"] = inrow["sliceid"]
@@ -137,6 +142,7 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser() 
+    parser.add_argument("graph_id", help="Label of the named sequence.")
     parser.add_argument("inputsqlite", help="The SQLite database to export to Postgres")
     parser.add_argument("--config", help="Configuration file", default="differ.cfg")
     parser.add_argument("--debug", help="Enable debug printing", action="store_true")
