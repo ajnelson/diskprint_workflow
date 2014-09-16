@@ -9,7 +9,7 @@ git submodule update deps/python-cybox
 AFFLIB_REPO=https://github.com/simsong/AFFLIBv3.git
 AFFLIB_COMMIT=b0a36e392c26e4d9e95a85a41071d794d4b9ee73
 DFXMLSCHEMA_REPO=https://github.com/ajnelson/dfxml_schema.git
-DFXMLSCHEMA_COMMIT=b1329fe1e18e58afd762f96ae827f9593c470120
+DFXMLSCHEMA_COMMIT=532f994ef652df030cd3f7b96b0870d3fffaec68
 DFXML_REPO=https://github.com/simsong/dfxml.git
 DFXML_COMMIT=eb79c78966d14024d0b6b617f16b703c93b5f72a
 RE_REPO=https://github.com/ajnelson/regxml_extractor.git
