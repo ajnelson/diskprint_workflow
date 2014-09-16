@@ -6,7 +6,7 @@ make_sequence_deltas.py: Aggregate differences in ouput of Fiwalk and RegXML Ext
 For usage instructions, see the argument parser description below, or run this script without arguments.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 import sys
 import os
@@ -57,11 +57,6 @@ def main():
     import rdifference
     import rx_make_database
 
-    #Fetch sequenceid for the graph we're analyzing.
-    sequenceid = differ_library.get_sequence_id_from_label(args.graph_id)
-    if sequenceid is None:
-        raise Exception("graph_id is not in the namedsequenceid table: %r.  Please inspect." % args.graph_id)
-
     #Set up database
 
     #Table structure should be consistent with the diskprint_database repository's 00_load_diskprintdb.sql
@@ -70,13 +65,11 @@ def main():
     outcur.execute("""
         CREATE TABLE IF NOT EXISTS hive (
           hiveid NUMBER,
-          hivepath TEXT,
-          sequenceid NUMBER
+          hivepath TEXT
         );
     """)
     outcur.execute("""
         CREATE TABLE IF NOT EXISTS regdelta (
-          sequenceid NUMBER,
           osetid TEXT,
           appetid TEXT,
           sliceid NUMBER,
@@ -101,7 +94,7 @@ def main():
     re_dir_sequence = []
     #Get list of all nodes of the sequence
     sequence_nodes_list = []
-    sequence_nodes_file_path = os.path.join(args.dwf_all_results_root, "by_graph/%s/make_sequence_list.sh/sequence_nodes.txt" % graph_id)
+    sequence_nodes_file_path = os.path.join(args.dwf_all_results_root, "by_graph/%s/make_sequence_list.sh/sequence_nodes.txt" % args.graph_id)
     _logger.info("Fetching list of sequence nodes...")
     _logger.debug("Node listing file: %r." % sequence_nodes_file_path)
     with open(sequence_nodes_file_path, "r") as fh:
@@ -176,8 +169,7 @@ def main():
         local_hiveid_counter += 1
         hiveid_record = {
           "hiveid": local_hiveid_counter,
-          "hivepath": hive_fspath,
-          "sequenceid": sequenceid
+          "hivepath": hive_fspath
         }
         rx_make_database.insert_db(outcur, "hive", hiveid_record)
         outconn.commit()
@@ -208,7 +200,6 @@ def main():
                         old_parent_cell = s.cnames.get(parent_path)
                         old_parent_mtime = time_string_from_cell(old_parent_cell)
                     regdelta_record = {
-                      "sequenceid": hiveid_record["sequenceid"],
                       "osetid": frxp_osetid,
                       "appetid": frxp_appetid,
                       "sliceid": frxp_sliceid,
@@ -238,7 +229,6 @@ def main():
                         new_parent_cell = s.new_cnames.get(parent_path)
                         new_parent_mtime = time_string_from_cell(new_parent_cell)
                     regdelta_record = {
-                      "sequenceid": hiveid_record["sequenceid"],
                       "osetid": frxp_osetid,
                       "appetid": frxp_appetid,
                       "sliceid": frxp_sliceid,
@@ -268,7 +258,6 @@ def main():
                     if cell.full_path() in changed_properties_noted:
                       continue
                     regdelta_record = {
-                      "sequenceid": hiveid_record["sequenceid"],
                       "osetid": frxp_osetid,
                       "appetid": frxp_appetid,
                       "sliceid": frxp_sliceid,
