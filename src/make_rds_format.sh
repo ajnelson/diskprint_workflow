@@ -8,6 +8,6 @@ source "${script_dir}/_pick_pythons.sh"
 
 output_dir="${2}"
 
-fiout="${output_dir}/../make_fiwalk_dfxml_alloc.sh/fiout.dfxml"
+xmlin="${output_dir}/../make_differential_dfxml_prior.sh/deltas.dfxml"
 
-"$PYTHON3" "${script_dir}/make_rds_format.py" "$fiout" "${output_dir}/NSRLFile.txt"
+"$PYTHON3" "${script_dir}/make_rds_format.py" "$xmlin" "${output_dir}/NSRLFile.txt"
