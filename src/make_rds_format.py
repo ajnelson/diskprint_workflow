@@ -8,7 +8,7 @@ http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-1
 Table 2
 """
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 import os
 import logging
@@ -21,6 +21,9 @@ import Objects
 def main():
     global args
     with open(args.output_file, "w", newline='\r\n') as output_fh:
+        #Print header
+        print('"SHA-1","MD5","CRC32","FileName","FileSize","ProductCode","OpSystemCode","SpecialCode"', file=output_fh)
+
         for (event, obj) in Objects.iterparse(args.input_dfxml):
             if not isinstance(obj, Objects.FileObject):
                 continue
