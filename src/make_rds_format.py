@@ -8,31 +8,66 @@ http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-1
 Table 2
 """
 
-__version__ = "0.1.1"
+__version__ = "0.2.3"
 
 import os
 import logging
+import binascii
 
-import dfxml
+_logger = logging.getLogger(os.path.basename(__file__))
+
+import Objects
 
 def main():
     global args
-    with open(args.input_dfxml, "rb") as input_fh:
-        with open(args.output_file, "w", newline='\r\n') as output_fh:
-            def process_fi(fi):
-                if fi.name_type() != "r":
-                    return
-                _sha1 = '"' + (fi.sha1() or "") + '"'
-                _md5 = '"' + (fi.md5() or "") + '"'
-                _filename = '"' + os.path.basename((fi.filename() or "")) + '"'
-                _filesize = str(fi.filesize() or "")
-                print(",".join([_sha1, _md5, '""', _filename, _filesize, "", "", '""']), file=output_fh)
-            dfxml.read_dfxml(xmlfile=input_fh, callback=process_fi)
+    with open(args.output_file, "w", newline='\r\n') as output_fh:
+        for (event, obj) in Objects.iterparse(args.input_dfxml):
+            if not isinstance(obj, Objects.FileObject):
+                continue
+
+            #File must be new or modified.
+            if not ("new" in obj.annos or "modified" in obj.annos):
+                continue
+
+            #File must be regular (not a directory, link, etc).
+            if obj.name_type != "r":
+                continue
+
+            #File must be allocated.
+            if not obj.alloc:
+                continue
+
+            #To get the CRC32, the file must not be compressed.  (The .compressed property currently denotes NTFS compression.  I haven't checked to see if this is extractable.  So for now, skip compressed files.)
+            if obj.compressed:
+                _logger.info("Skipping a file stored with NTFS compression (id=%r)." % obj.id)
+                continue
+
+            _sha1 = '"' + (obj.sha1 or "") + '"'
+            _md5 = '"' + (obj.md5 or "") + '"'
+            _filename = '"' + os.path.basename(obj.filename or "") + '"'
+            _filesize = str(obj.filesize or "")
+
+            _crc32 = '""'
+            if obj.filesize > 0 and obj.data_brs:
+                crc = 0
+                try:
+                    for byte_buffer in obj.data_brs.iter_contents(args.input_disk_image):
+                        crc = binascii.crc32(byte_buffer, crc)
+                #This line c/o: https://docs.python.org/3.3/library/binascii.html#binascii.crc32
+                    _crc32 = '"{:#010x}"'.format(crc & 0xffffffff)[2:]
+                except:
+                    _logger.info("Input DFXML file: %r." % os.path.abspath(args.input_dfxml))
+                    _logger.info("File ID: %r." % obj.id)
+                    _logger.info("Object: %r." % obj)
+                    raise
+
+            print(",".join([_sha1, _md5, _crc32, _filename, _filesize, "", "", '""']), file=output_fh)
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("input_dfxml")
+    parser.add_argument("input_disk_image")
     parser.add_argument("output_file")
     parser.add_argument("-d", "--debug", help="Enable debug printing", action="store_true")
     args = parser.parse_args()
