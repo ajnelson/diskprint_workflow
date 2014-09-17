@@ -6,8 +6,10 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 #Define Pythons
 source "${script_dir}/_pick_pythons.sh"
 
-output_dir="${2}"
+node_id1="$1"
+dwf_output_dir="${2}"
 
-xmlin="${output_dir}/../make_differential_dfxml_prior.sh/deltas.dfxml"
+input_disk_image="${dwf_all_results_root}/by_node/${node_id1}/link_disk.sh/disk0.E01"
+input_dfxml="${dwf_output_dir}/../make_differential_dfxml_prior.sh/deltas.dfxml"
 
-"$PYTHON3" "${script_dir}/make_rds_format.py" "$xmlin" "${output_dir}/NSRLFile.txt"
+"$PYTHON3" "${script_dir}/make_rds_format.py" "$input_dfxml" "$input_disk_image" "${dwf_output_dir}/NSRLFile.txt"
