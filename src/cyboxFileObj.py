@@ -16,7 +16,11 @@ def main():
     obj_dict = {}
     #Open the RDS formatted files and read in the fields of interest.
     with open(sys.argv[1], 'r') as csvfile:
-        for row in csv.reader(csvfile,delimiter=','):
+        for (row_no, row) in enumerate(csv.reader(csvfile,delimiter=',')):
+#Skip header. 
+            if row_no == 0:
+                continue
+
             SHA1 = row[0]
             MD5 = row[1]
             #CRC32 = row[2]
