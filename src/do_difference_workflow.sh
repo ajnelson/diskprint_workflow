@@ -17,6 +17,17 @@ my_readlink () {
   python -c 'import os,sys; print(os.path.abspath(sys.argv[1]))' "$1"
 }
 
+#Define a few helper functions for extracting node information.
+node_id_to_osetid () {
+  python -c 'import sys; print("-".join(sys.argv[1].split("-")[0:2]))'
+}
+node_id_to_appetid () {
+  python -c 'import sys; print("-".join(sys.argv[1].split("-")[2:4]))'
+}
+node_id_to_sliceid () {
+  python -c 'import sys; print(sys.argv[1].split("-")[-1])'
+}
+
 #Document script
 dwf_script_dirname="$(dirname $(my_readlink $0))"
 script_basename=$(basename "$0")
@@ -340,6 +351,18 @@ logandrunscript () {
       #This script was called for the baseline of the sequence.  There is no differencing to be done.
       echo "DEBUG:${script_basename}:logandrunscript:Did not find predecessor node in edge." >&2
       return 0
+    fi
+
+    #Sanity-check increasing order of sliceids
+    _appetid0=$(node_id_to_osetid $node_id0)
+    _appetid1=$(node_id_to_osetid $node_id1)
+    _sliceid0=$(node_id_to_sliceid $node_id0)
+    _sliceid1=$(node_id_to_sliceid $node_id1)
+    if [ "$_appetid0" == "$appetid1" ]; then
+      if [ $_sliceid0 -ge $_sliceid1 ]; then
+        echo "ERROR:${script_basename}:logandrunscript:Node ID's out of order.  0, 1: $node_id0, $node_id1." >&2
+        exit 1
+      fi
     fi
 
     foutdir="${dwf_all_results_root}/by_edge/${node_id0}/${node_id1}/${fscript_basename}"
