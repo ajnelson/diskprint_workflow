@@ -57,7 +57,7 @@ def main():
                     for byte_buffer in obj.data_brs.iter_contents(args.input_disk_image):
                         crc = binascii.crc32(byte_buffer, crc)
                 #This line c/o: https://docs.python.org/3.3/library/binascii.html#binascii.crc32
-                    _crc32 = '"{:#010x}"'.format(crc & 0xffffffff)[2:]
+                    _crc32 = '"{:#010x}"'.format(crc & 0xffffffff)[3:]
                 except:
                     _logger.info("Input DFXML file: %r." % os.path.abspath(args.input_dfxml))
                     _logger.info("File ID: %r." % obj.id)
