@@ -3,7 +3,7 @@
 Produces a sequence list for the given sequence-identifying triplet.
 """
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 import os
 import sys
@@ -28,19 +28,21 @@ ORDER BY
 def list_nodes(conn, cursor, sequencelabel):
     sql_get_nodes = """\
 SELECT
-  sequencelabel,
-  osetid,
-  appetid,
-  sliceid
+  *
 FROM
   diskprint.namedsequence
 WHERE
   sequencelabel = %s
+ORDER BY
+  sliceid
 ;"""
     cursor.execute(sql_get_nodes, (sequencelabel,))
     rows = [row for row in cursor]
     #AJN TODO This will need a better node's-data mechanism.  For now, though, we're just analyzing disks.
-    for row in rows:
+    for (row_no, row) in enumerate(rows):
+        #For the first row, print the baseline node if there is one.
+        if row_no == 0 and not row["predecessor_osetid"] is None:
+            print("%(predecessor_osetid)s-%(predecessor_appetid)s-%(predecessor_sliceid)s" % row)
         print("%(osetid)s-%(appetid)s-%(sliceid)s" % row)
 
 def main():
