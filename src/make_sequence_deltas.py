@@ -6,7 +6,7 @@ make_sequence_deltas.py: Aggregate differences in ouput of Fiwalk and RegXML Ext
 For usage instructions, see the argument parser description below, or run this script without arguments.
 """
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 import sys
 import os
@@ -94,7 +94,7 @@ def main():
     re_dir_sequence = []
     #Get list of all nodes of the sequence
     sequence_nodes_list = []
-    sequence_nodes_file_path = os.path.join(args.dwf_all_results_root, "by_graph/%s/make_sequence_list.sh/sequence_nodes.txt" % args.graph_id)
+    sequence_nodes_file_path = os.path.join(args.dwf_all_results_root, "by_sequence/%s/make_sequence_list.sh/sequence_nodes.txt" % args.graph_id)
     _logger.info("Fetching list of sequence nodes...")
     _logger.debug("Node listing file: %r." % sequence_nodes_file_path)
     with open(sequence_nodes_file_path, "r") as fh:

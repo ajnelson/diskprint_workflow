@@ -49,7 +49,7 @@ usage=$usage"\t--re-export\n"
 usage=$usage"\t  Re-run export step for specified sequence(s).\n"
 usage=$usage"\t--report-pidlog\n"
 usage=$usage"\t  Output a line of text that notes where this workflow instance's log is stored.  Ignores --quiet.\n"
-usage=$usage"Places results in \$results_root/by_graph/$script_basename/\n"
+usage=$usage"Places results in \$results_root/by_sequence/$script_basename/\n"
 usage=$usage"This script will probably occupy a core for a day.  If there are database errors, the relevant scripts' .err.log files will include SQL 'undo' statements.\n"
 
 usage_exit() {
@@ -258,7 +258,7 @@ fi
 dwf_sequence_id="$1"
 echo "DEBUG:${script_basename}:\$dwf_sequence_id = $dwf_sequence_id" >&2
 export dwf_sequence_id
-outdir_per_sequence="${results_root_path}/by_graph/${dwf_sequence_id}"
+outdir_per_sequence="${results_root_path}/by_sequence/${dwf_sequence_id}"
 
 #Ensure we have an output directory
 workflow_script_outdir="${outdir_per_sequence}/${script_basename}"
@@ -370,7 +370,7 @@ logandrunscript () {
 
     foutdir="${dwf_all_results_root}/by_edge/${node_id0}/${node_id1}/${fscript_basename}"
   elif [ "$analysis_type" == "graph" ]; then
-    foutdir="${dwf_all_results_root}/by_graph/${dwf_sequence_id}/${fscript_basename}"
+    foutdir="${dwf_all_results_root}/by_sequence/${dwf_sequence_id}/${fscript_basename}"
   else
     "ERROR:${script_basename}:logandrunscript called without a proper analysis type argument." >&2
     exit 1
@@ -455,7 +455,7 @@ count_script_errors() {
       node_id0="$node_id1"
     done <"$dwf_node_sequence_file"
   elif [ "$analysis_type" == "graph" ]; then
-    statlog="${dwf_all_results_root}/by_graph/${dwf_sequence_id}/${target_script}.status.log"
+    statlog="${dwf_all_results_root}/by_sequence/${dwf_sequence_id}/${target_script}.status.log"
     _tally
   else
     echo "ERROR:$0:count_script_errors called with bad first argument (should be 'node', 'edge', or 'graph'), received: ${analysis_type}." >&2
@@ -475,7 +475,7 @@ if [ $any_errors -gt 0 ]; then
   exit 1
 fi
 #(This next variable is hard-coded between here and the make_sequence_list.sh script.)
-export dwf_node_sequence_file="${dwf_all_results_root}/by_graph/${dwf_sequence_id}/make_sequence_list.sh/sequence_nodes.txt"
+export dwf_node_sequence_file="${dwf_all_results_root}/by_sequence/${dwf_sequence_id}/make_sequence_list.sh/sequence_nodes.txt"
 
 #Bail out if any errors were found in the loop.
 if [ $any_errors -gt 0 ]; then
