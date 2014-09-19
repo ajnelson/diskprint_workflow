@@ -1,8 +1,6 @@
 #!/bin/bash
 
-#This script does the entire differencing workflow for a sequence of disk slice tarballs.  It assumes that at invocation time, the database is updated with diskprint metadata, and the file system has all of the tarballs in place.
-
-#Output for this script is generated as the other output, just in the final tarball's output directory.
+#This script does the entire differencing workflow for a sequence of disk slice tarballs.  It assumes that at invocation time, the database is updated with diskprint storage-referencing (e.g. paths to disk images) and sequence-defining metadata.
 
 #Include PATH extensions
 this_script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
