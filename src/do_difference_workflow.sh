@@ -17,14 +17,17 @@ my_readlink () {
 
 #Define a few helper functions for extracting node information.
 node_id_to_osetid () {
-  python -c 'import sys; print("-".join(sys.argv[1].split("-")[0:2]))'
+  python -c 'import sys; print("-".join(sys.argv[1].split("-")[0:2]))' "$1"
 }
 node_id_to_appetid () {
-  python -c 'import sys; print("-".join(sys.argv[1].split("-")[2:4]))'
+  python -c 'import sys; print("-".join(sys.argv[1].split("-")[2:4]))' "$1"
 }
 node_id_to_sliceid () {
-  python -c 'import sys; print(sys.argv[1].split("-")[-1])'
+  python -c 'import sys; print(sys.argv[1].split("-")[-1])' "$1"
 }
+export -f node_id_to_osetid
+export -f node_id_to_appetid
+export -f node_id_to_sliceid
 
 #Document script
 dwf_script_dirname="$(dirname $(my_readlink $0))"
