@@ -3,7 +3,7 @@
 # This script is a library, just defining some variables.  Similar to what an Autotools configure script would define.
 
 PYTHON2=`which python2.7`
-for p in python3.3 python3.2 python3; do
+for p in python3.4 python3.3 python3.2 python3; do
   set +e
   PYTHON3=`which $p`
   set -e

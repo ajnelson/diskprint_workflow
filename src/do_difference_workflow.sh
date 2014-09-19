@@ -59,6 +59,10 @@ usage_exit() {
 
 #Set defaults
 GNU_GETOPT=/opt/local/bin/getopt
+if [ ! -x "$GNU_GETOPT" ]; then
+  #/opt/local is for getopt provided by MacPorts.
+  GNU_GETOPT=getopt
+fi
 DIFFER_CONFIG="${dwf_script_dirname}/differ.cfg"
 cleanup=check
 num_jobs=0
@@ -66,6 +70,9 @@ parallel_all=0
 quiet=0
 re_export=0
 report_pidlog=0
+
+#Pick Pythons
+source "${this_script_dir}/_pick_pythons.sh"
 
 if ! options=$(${GNU_GETOPT} -o hj: -l cleanup:,config:,help,jobs:,parallel-all,quiet,re-export,report-pidlog -- "$@"); then
   # Something went wrong; getopt should report what.
@@ -240,7 +247,7 @@ if [ $parallel_all -eq 1 ]; then
   if [ $report_pidlog -eq 1 ]; then
     parg_report_pidlog="--report-pidlog"
   fi
-  ./sliceprocessor.py --config "$DIFFER_CONFIG" | \
+  "$PYTHON2" sliceprocessor.py --config "$DIFFER_CONFIG" | \
     parallel --quote -j1 \
       "$0" "$parg_report_pidlog" "$parg_re_export" --cleanup ignore -j $num_jobs --config "$DIFFER_CONFIG" --quiet {} "$@"
   exit 0
@@ -248,8 +255,6 @@ fi
 
 #The rest of this script is single-slice/single-sequence mode.
 
-#Pick Pythons
-source "${this_script_dir}/_pick_pythons.sh"
 dwf_sequence_id="$1"
 echo "DEBUG:${script_basename}:\$dwf_sequence_id = $dwf_sequence_id" >&2
 export dwf_sequence_id
