@@ -15,7 +15,6 @@ sudo port install \
   py33-dateutil \
   py33-psycopg2 \
   python27 \
-  python33 \
-  qemu
+  python33
 
 echo "Done."

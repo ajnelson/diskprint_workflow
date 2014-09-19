@@ -20,7 +20,6 @@ sudo apt-get install \
   python3-psycopg2 \
   python3-setuptools \
   python2.7 \
-  python3 \
-  qemu
+  python3
 
 echo "Done."

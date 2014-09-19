@@ -2,7 +2,7 @@
 
 This repository contains program configurations and calls used to process diskprints.  An overview of the diskprint project is available from [NIST](http://www.nsrl.nist.gov/Diskprints.htm).
 
-NB: The workflow in this repository is meant to be run by a dedicated shell user account in a Mac OS X environment.  The account's Bash environment must be configured to allow for local compilation and installation by augmentations to various `$PATH` variables.  If not already configured, a script is included to complete configuration.
+NB: The workflow in this repository is meant to be run by a dedicated shell user account in a Mac OS X or Ubuntu 14.04 environment.  The account's Bash environment must be configured to allow for local compilation and installation by augmentations to various `$PATH` variables.  If not already configured, a script is included to complete configuration.
 
 
 ## Data
