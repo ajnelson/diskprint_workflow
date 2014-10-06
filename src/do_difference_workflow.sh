@@ -45,15 +45,15 @@ usage=$usage"\t  Print this help and quit.\n"
 usage=$usage"\t-j N, --jobs N\n"
 usage=$usage"\t  When doing parallel work, run this many jobs simultaneously.  '0' runs as many as possible.  No effect if --parallel-all is not passed.\n"
 usage=$usage"\t--parallel-all\n"
-usage=$usage"\t  Run workflow in parallel on all disk images stored in database 'storage' table.\n"
+usage=$usage"\t  Run workflow in parallel on all sequences stored in database 'namedsequenceid' table.\n"
 usage=$usage"\t--quiet\n"
 usage=$usage"\t  Redirect _most_ stdout and stderr output to /dev/null.  Exceptions noted in this help.\n"
 usage=$usage"\t--re-export\n"
-usage=$usage"\t  Re-run export step for specified sequence(s).\n"
+usage=$usage"\t  Re-run export step for specified sequence(s).  (The entire workflow is run, but the old export results are erased.)\n"
 usage=$usage"\t--report-pidlog\n"
 usage=$usage"\t  Output a line of text that notes where this workflow instance's log is stored.  Ignores --quiet.\n"
 usage=$usage"Places results in \$results_root/by_sequence/$script_basename/\n"
-usage=$usage"This script will probably occupy a core for a day.  If there are database errors, the relevant scripts' .err.log files will include SQL 'undo' statements.\n"
+usage=$usage"If there are database errors, the relevant scripts' .err.log files will include SQL 'undo' statements.\n"
 
 usage_exit() {
   printf "$usage" >&2
