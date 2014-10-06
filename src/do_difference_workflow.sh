@@ -6,10 +6,6 @@
 this_script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 source "$this_script_dir/../_env_extra.sh"
 
-#Include PATH extensions
-this_script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
-source "$this_script_dir/../_env_extra.sh"
-
 #Propagate SIGINT to subshells: http://stackoverflow.com/a/8366378/1207160
 trap "kill 0" SIGINT SIGTERM
 
