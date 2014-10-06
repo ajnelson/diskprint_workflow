@@ -8,8 +8,15 @@ set -e
 #Define Pythons
 source "${script_dir}/_pick_pythons.sh"
 
-output_dir="${2}"
+dwf_output_dir="${2}"
+source "$script_dir/_results_sequences.sh"
 
-rdsout="${output_dir}/../make_rds_format.sh/NSRLFile.txt"
+#Skip for beginning of sequence (there is no prior for differences)
+if [ $dwf_tarball_results_dirs_index_current -eq 0 ]; then
+  echo "INFO:$(basename $0):Skipping differential analysis step on baseline image.  (No pre-baseline data in sequence.)" >&2
+  exit 0
+fi
 
-"$PYTHON2" "${script_dir}/cyboxFileObj.py" "$rdsout" > "${output_dir}/FileObjs.xml"
+rdsout="${dwf_output_dir}/../make_rds_format.sh/NSRLFile.txt"
+
+"$PYTHON2" "${script_dir}/cyboxFileObj.py" "$rdsout" > "${dwf_output_dir}/FileObjs.xml"
