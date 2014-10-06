@@ -578,7 +578,7 @@ any_errors=$(count_script_errors edge "make_new_file_sector_hashes.sh")
 #Tolerate errors with sector hashing for now.
 
 
-#Create RDS-formatted output from Fiwalk DFXML
+#Create RDS-formatted output from differential DFXML
 $my_inorder_parallel \
   echo "Note: Starting RDS re-formatting for \"{}\"." \>\&2 \; \
   logandrunscript edge "$dwf_script_dirname/make_rds_format.sh" {} \; \
