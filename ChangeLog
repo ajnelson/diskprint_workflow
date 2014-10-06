@@ -1,3 +1,12 @@
+2014-10-06    <a.nelson@prometheuscomputing.com>
+
+	* Project: Long-overdue merge of 'unstable' branch performed.
+	* Documentation: README and help flag of workflow updated.
+	* Workflow: Now runs on Ubuntu 14.04.  Thanks to Jim Jones and Tahir Khan for early testing in Ubuntu.
+	* Data model: Now based on lineage graph database table, instead of initial assumptions of tarball paths being sufficient to identify sequences.
+	* Results: Now organized by graph concepts: by-node, by-edge, by-sequence.  Documented in README.
+	* Results: New results based on file system differences represented as differential DFXML.  NSRL RDS format, CybOX format, and disk sector hashes are now produced for new and modified files.
+
 2013-08-22    <a.nelson@prometheuscomputing.com>
 
 	* Documentation: Add introduction and collaboration text to README.
