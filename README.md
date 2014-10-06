@@ -2,12 +2,12 @@
 
 This repository contains program configurations and calls used to process diskprints.  An overview of the diskprint project is available from [NIST](http://www.nsrl.nist.gov/Diskprints.htm).
 
-NB: The workflow in this repository is meant to be run by a dedicated shell user account in a Mac OS X environment.  The account's Bash environment must be configured to allow for local compilation and installation by augmentations to various `$PATH` variables.  If not already configured, a script is included to complete configuration.
+NB: The workflow in this repository is meant to be run by a dedicated shell user account in a Mac OS X or Ubuntu 14.04 environment.  The account's Bash environment must be configured to allow for local compilation and installation by augmentations to various `$PATH` variables.  If not already configured, a script is included to complete configuration.
 
 
 ## Data
 
-This workflow operates on tarballs of virtual machines generated with VMWare Fusion.  (VMWare Workstation appears to generate data in a sufficiently similar format, but has not been tested.)  A diskprint is effectively a sequence of tarballs of a single virtual machine.  At times of interest in the machine usage, the machine is paused and archived with `tar`.  Virtual machine snapshots are not currently used.  The tarballs are then annotated and stored.  Storage references and the metadata are loaded into a Postgres database; example SQL statements that illustrate the annotations are in the `examples/` directory of the [Diskprint database](https://github.com/ajnelson/diskprint_database).
+This workflow operates on *diskprints*, sequences of snapshots of virtual machines generated with VMWare Fusion.  (VMWare Workstation appears to generate data in a sufficiently similar format, but has not been tested.)  At times of interest in the machine usage, the machine is snapshotted, with the snapshot annotated.  Storage location references and the metadata are loaded into a Postgres database; example SQL statements that illustrate the annotations are in the `examples/` directory of the [Diskprint database](https://github.com/ajnelson/diskprint_database).  A Bash script calls a workflow of forensic tools that perform analysis on one or multiple virtual machine states at a time.
 
 
 ## Initial setup
@@ -15,8 +15,8 @@ This workflow operates on tarballs of virtual machines generated with VMWare Fus
 Before your first run, you will need to run these commands to guarantee your environment will support the differencing workflow:
 
     ./git_submodule_init.sh
-    deps/augment_shell.sh ; source ~/.bashrc
     sudo deps/install_dependent_packages_(your supported OS here)
+    deps/augment_shell.sh ; source ~/.bashrc
     ./bootstrap.sh
 
 Note only one command needs to be run with `sudo`.  Everything else that requires compilation and installation is installed into this directory (under `./local`).
@@ -39,39 +39,102 @@ Check that the database is queryable with this script:
     tests/check_db.sh
 
 
-## Running
+## Analysis model
 
-The workflow runs by invoking the script and passing the path to the last diskprint tarball of your sequence, and the root directory of where your results will be planted.  For instance, the following commands:
+A diskprint is a series of snapshots of a virtual machine, focused on an application being installed on an operating system.  The diskprint workflow analyzes virtual machine states according to their *lineage graph*.  For example, consider two applications, Firefox and TrueCrypt printed on a shared Windows 7 installation.  The graph of their lineage would be:
 
-    cd src/
-    ./do_difference_workflow.sh /Volumes/DiskPrintStore/8504-1/7895-1/8504-1-7895-1-40.tar.gz results
+    win7-50
+      |\
+      | firefox-10 - firefox-20 - firefox-30
+      |  
+       \
+        truecrypt-10 - truecrypt-20 - truecrypt-30
 
-Will create these directories:
-* `src/results/Volumes/DiskPrintStore/8504-1/7895-1/8504-1-7895-1-10.tar.gz/`...
-* `src/results/Volumes/DiskPrintStore/8504-1/7895-1/8504-1-7895-1-20.tar.gz/`...
-* `src/results/Volumes/DiskPrintStore/8504-1/7895-1/8504-1-7895-1-30.tar.gz/`...
-* `src/results/Volumes/DiskPrintStore/8504-1/7895-1/8504-1-7895-1-40.tar.gz/`...
+Analysis scripts are run against three levels of inputs, based on this lineage graph.
 
-That example assumes the sequence begins at 10; the actual sequence is defined in the database and read by `make_sequence_list.sh`.
+* Each *node* of the graph is a single virtual machine state.  A node-level analysis step only considers data from this state, e.g. a file system metadata manifest.
+* Each *edge* of the graph is a transition from state to state.  An edge-level analysis depends on the data of both states, e.g. a file system difference.
+* A *sequence* is a subset of nodes and edges from the whole lineage graph.  An example sequence would be the four nodes `win7-50` through `firefox-30`; this sequence can be named in any way, but for this document it will be called "`example-win7-firefox`."  A sequence-level analysis depends on the nodes and edges within the sequence, e.g. aggregating the differences in file system state from the baseline (`win7-50`) through the end.
 
-An easier approach to running the workflow is telling it to run on all available data; to do this, pass the flag "`--parallel-all`" instead of a tarball path.
+Note that with some construction of database records, subsequences can be defined for analysis.  E.g. the two-node sequence `win7-50 - firefox-20` could re-use results generated by the original sequence `example-win7-firefox`, but would need to create results for the new edge `win7-50/firefox-20`.
 
-This workflow is idempotent on success:  If everything worked, running it again will cause nothing to happen.
+    win7-50 ________
+       \            \
+        \            \ <---- New results for this edge
+         \            \
+          firefox-10 - firefox-20 - firefox-30
+
+
+## Running, and data generated
+
+The workflow runs by invoking the `do_difference_workflow` script, passing the name of a sequence you want analyzed and the root directory of where your results will be planted.  For instance, the command:
+
+    src/do_difference_workflow.sh example-win7-firefox results
+
+Will create these directories, among others:
+* `results/by_sequence/example-win7-firefox/`...
+* `results/by_node/firefox-10/`...
+* `results/by_node/win7-50/`...
+* `results/by_edge/win7-50/firefox-10/`...
+* `results/by_edge/firefox-10/firefox-20/`...
+
+An easier approach to running the workflow is telling it to run on all available sequences; to do this, pass the flag "`--parallel-all`" instead of a sequence name.
+
+Under each of the directories that show *what* is being analyzed (that is, every pre-ellipsis directory in the above list), another directory is created to show *how* it was analyzed, by naming the analysis script.  Logs are named according to the directory for diagnosis and resumption purposes.
+
+For example, an early node-level script in the workflow fetches the location of the disk image from the database and creates a consistently-named softlink.  The directories and logs that would be created for Firefox's first state would be:
+
+* `results/by_node/firefox-10/link_disk.sh` (a directory; script suffixes are retained to prevent path collisions later)
+* `results/by_node/firefox-10/link_disk.sh.err.log`
+* `results/by_node/firefox-10/link_disk.sh.out.log`
+* `results/by_node/firefox-10/link_disk.sh.status.log`
+
+The three logs record standard error, standard out, and the script exit status.
+
+This workflow is incrementally idempotent:  For every script that worked, running the workflow again will not re-run that script.
 
 
 ### Halting
 
-The workflow script can be safely killed with just a ctrl-c.  If anything does not complete, the error log will tell you what you need to do to resume the work.  Alternatively, simply running the script again will tell you what you need to do to resume the work, and even will offer to do erroneous result cleanup (see the `--cleanup` option).
+The workflow script can be safely killed with just a ctrl-c.  If anything does not complete, the error log of `do_difference_workflow` will tell you what you need to do to resume the work.  Alternatively, simply running the script again will tell you what you need to do to resume the work, and will even offer to do erroneous result cleanup (see the `--cleanup` option).
 
-You will know it all worked when the last line of output is:
+On completion, the workflow prints:
 
     Done.
 
 
-## Data generated
+## Results created
+
+
+### By-node results
+
+* *Disk image extraction* - The script `invoke_vmdk_to_E01.sh` converts tarballs to disk images in the libewf format.
+* *DFXML generation* - The scripts `make_fiwalk_dfxml_all.sh` and `make_fiwalk_dfxml_alloc.sh` generate Fiwalk output for all files and only allocated files, respectively.
+* *DFXML validation* - Generated DFXML is validated against the [DFXML schema](https://github.com/dfxml-working-group/dfxml_schema), using `validate_fiwalk_dfxml_alloc.sh` and `validate_fiwalk_dfxml_all.sh`.
+* *Hive extraction* - Hive files are extracted by calling `invoke_regxml_extractor.sh`.
+* *Hive Perl processing* - The hive files are processed with some Registry Perl modules, under `run_reg_perl.sh`.
+* *RegXML conversion* - The hive files are also converted to RegXML using [RegXML Extractor](https://github.com/ajnelson/regxml_extractor/).  This is also found under the results for `invoke_regxml_extractor.sh`.
+
+
+### By-edge results
+
+* *Differential DFXML* - The file system level differences are created for each slice in the sequence.  Two differences are made: `make_differential_dfxml_baseline.sh` computes differences from the first slice of the sequence, and `make_differential_dfxml_prior.sh` from the previous slice in the sequence.
+* *New-file manifests in NSRL RDS format* - `make_rds_format.sh` converts DFXML documents to the [NSRL RDS format](http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-16.pdf), a CSV-style format.  Note that this reports new file states, so files with changed contents will be reported as well.
+* *New-file manifests in CybOX format* - `make_cybox_format.sh` converts the NSRL RDS format to a [CybOX](https://cybox.mitre.org/) document.  The specific version of CybOX used is determined by the `deps/python-cybox` submodule's Git revision.
+* *Sector-level hashes* - `make_new_file_sector_hashes.sh` computes 512-byte sector hashes for each file that is new since the previous slice in the sequence.
+
+
+### By-sequence results
+
+The Registry differences of each sequence are aggregated with `make_sequence_deltas.sh`, which uses [`rdifference.py`](https://github.com/simsong/dfxml/blob/master/python/rdifference.py) to determine Registry differences.
+
+The aggregated results for this sequence are then rolled into the results database for all sequences, using `export_sqlite_to_postgres.sh`.  Lineage graph- and subgraph-level analysis is then possible, but out of the scope of running this workflow.
+
+
+### Erasing generated results
 
 If you want to erase all the derived data, do these three steps:
-* Kill all the running instances of `do_difference_workflow.sh`
+* Kill all the running instances of `do_difference_workflow.sh`.
 * Delete the output root (`results` in the above example).
 * Delete all contents from the database's `regdelta` and `hive` tables.
 
@@ -85,7 +148,7 @@ First, the cleanest approach to ensuring difference data are up-to-date is refre
     DELETE FROM diskprint.regdelta;
     DELETE FROM diskprint.hive;
 
-Running the workflow again with the `--re-export` flag will run only the export step.
+Running the workflow again with the `--re-export` flag will remove past instances of the export step, whether they were successful or not.
 
 
 ## Debugging

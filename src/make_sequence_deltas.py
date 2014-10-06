@@ -6,7 +6,7 @@ make_sequence_deltas.py: Aggregate differences in ouput of Fiwalk and RegXML Ext
 For usage instructions, see the argument parser description below, or run this script without arguments.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.3.2"
 
 import sys
 import os
@@ -14,7 +14,11 @@ import argparse
 import sqlite3
 import collections
 import logging
+
+_logger = logging.getLogger(os.path.basename(__file__))
+
 import dfxml
+import differ_library
 
 """
 AJN: Sorry, I realized pretty late that the slice type was a required field. This hard-coded variable can be deleted after the slice type is queried.
@@ -30,31 +34,15 @@ def time_string_from_cell(cell):
     return None
         
 
-def etid_from_tarball_path(path, part):
+def nodeid_from_regxml_path(path):
     """
-    Quick 'n' dirty.  This definitely deserves a database query instead.
-    #TODO
-    """
-    bn = os.path.basename(path)
-    parts = bn.split(".")[0].split("-")
-    assert len(parts) == 5
-    return parts[part]
-
-def appetid_from_tarball_path(path):
-    return etid_from_tarball_path(path, 2) + "-" + etid_from_tarball_path(path, 3)
-
-def osetid_from_tarball_path(path):
-    return etid_from_tarball_path(path, 0) + "-" + etid_from_tarball_path(path, 1)
-
-def sliceid_from_regxml_path(path):
-    """
-    This is also a piece of fragile code.
+    This is a piece of fragile code.
     """
     assert path[0] == "/"  #Requires absolute path
     path_parts = path.split("/")
-    tarball_basename = path_parts[-3]
-    sliceid = int(tarball_basename.split(".")[0].split("-")[4])
-    return sliceid
+    nodeid = path_parts[-3]
+    (osetid, appetid, sliceid) = differ_library.split_node_id(nodeid)
+    return (osetid, appetid, sliceid)
 
 def main():
     global args
@@ -77,15 +65,13 @@ def main():
     outcur.execute("""
         CREATE TABLE IF NOT EXISTS hive (
           hiveid NUMBER,
-          hivepath TEXT,
-          appetid TEXT,
-          osetid TEXT
+          hivepath TEXT
         );
     """)
     outcur.execute("""
         CREATE TABLE IF NOT EXISTS regdelta (
-          appetid TEXT,
           osetid TEXT,
+          appetid TEXT,
           sliceid NUMBER,
           hiveid NUMBER,
           cellpath TEXT,
@@ -103,23 +89,38 @@ def main():
           slicetype TEXT
         );
     """)
-    outcur.execute("CREATE INDEX IF NOT EXISTS cellPath ON regdelta(cellpath);")
 
-    #Read in RegXML Extractor output directories
+    #Build list of RegXML Extractor output directories
     re_dir_sequence = []
-    with open(args.regxml_extractor_sequences, "r") as sequence_file:
-        for line in sequence_file:
-            cleaned_line = line.strip()
-            if not os.path.isdir(cleaned_line):
-                raise Exception("Path in input file is not directory: \"%s\"." % cleaned_line)
-            re_dir_sequence.append(cleaned_line)
-    logging.debug(re_dir_sequence)
+    #Get list of all nodes of the sequence
+    sequence_nodes_list = []
+    sequence_nodes_file_path = os.path.join(args.dwf_all_results_root, "by_sequence/%s/make_sequence_list.sh/sequence_nodes.txt" % args.graph_id)
+    _logger.info("Fetching list of sequence nodes...")
+    _logger.debug("Node listing file: %r." % sequence_nodes_file_path)
+    with open(sequence_nodes_file_path, "r") as fh:
+        for line in fh:
+            sequence_nodes_list.append(line.strip())
+    _logger.info("Done fetching list of sequence nodes.")
+    for node in sequence_nodes_list:
+        re_dir_path = os.path.join(args.dwf_all_results_root, "by_node/%s/invoke_regxml_extractor.sh" % node)
+        #TODO Test for logged success at re_abs_path + ".status.log"
+        if not (os.path.isdir(re_dir_path)):
+            raise ValueError("This is not a RegXML Extractor output directory: %r." % re_dir_path)
+        re_dir_sequence.append(re_dir_path)
+    if len(re_dir_sequence) == 0:
+        raise Exception("The sequence should have a non-zero number of RegXML Extractor directories.")
+
+    _logger.debug("re_dir_sequence = %r" % re_dir_sequence)
 
     #Establish DFXML sequences
     #TODO
 
     #Establish RegXML sequences
+
+    #Key: File system path within the subject disk images.
+    #Value: List of RegXML files pertaining to this file system path across the whole sequence.
     hive_file_histories = collections.defaultdict(list)
+
     #For now, require the anno database
     for rd in re_dir_sequence:
         logging.debug("Inspecting \"%s\"." % rd)
@@ -168,9 +169,7 @@ def main():
         local_hiveid_counter += 1
         hiveid_record = {
           "hiveid": local_hiveid_counter,
-          "hivepath": hive_fspath,
-          "appetid": appetid_from_tarball_path(args.representative_slice_tarball),
-          "osetid": osetid_from_tarball_path(args.representative_slice_tarball) 
+          "hivepath": hive_fspath
         }
         rx_make_database.insert_db(outcur, "hive", hiveid_record)
         outconn.commit()
@@ -190,6 +189,8 @@ def main():
                 logging.info("\t%d\tCells with changed properties" % len(s.changed_properties))
                 logging.info("(Changed content and properties are lumped together.)")
 
+                (frxp_osetid, frxp_appetid, frxp_sliceid) = nodeid_from_regxml_path(regxml_file)
+
                 #Output new cells
                 for cell in s.new_files:
                     #If possible, find the mtime of the parent in the old state
@@ -199,10 +200,10 @@ def main():
                         old_parent_cell = s.cnames.get(parent_path)
                         old_parent_mtime = time_string_from_cell(old_parent_cell)
                     regdelta_record = {
-                      "osetid": hiveid_record["osetid"],
-                      "appetid": hiveid_record["appetid"],
-                      "sliceid": sliceid_from_regxml_path(regxml_file),
-                      "hiveid": local_hiveid_counter,
+                      "osetid": frxp_osetid,
+                      "appetid": frxp_appetid,
+                      "sliceid": frxp_sliceid,
+                      "hiveid": hiveid_record["hiveid"],
                       "cellpath": cell.full_path(),
                       "cellaction": "created",
                       "parentmtimebefore": old_parent_mtime,
@@ -228,10 +229,10 @@ def main():
                         new_parent_cell = s.new_cnames.get(parent_path)
                         new_parent_mtime = time_string_from_cell(new_parent_cell)
                     regdelta_record = {
-                      "osetid": hiveid_record["osetid"],
-                      "appetid": hiveid_record["appetid"],
-                      "sliceid": sliceid_from_regxml_path(regxml_file),
-                      "hiveid": local_hiveid_counter,
+                      "osetid": frxp_osetid,
+                      "appetid": frxp_appetid,
+                      "sliceid": frxp_sliceid,
+                      "hiveid": hiveid_record["hiveid"],
                       "cellpath": ocell.full_path(),
                       "cellaction": "removed",
                       "parentmtimebefore": time_string_from_cell(ocell.parent_key),
@@ -257,10 +258,10 @@ def main():
                     if cell.full_path() in changed_properties_noted:
                       continue
                     regdelta_record = {
-                      "osetid": hiveid_record["osetid"],
-                      "appetid": hiveid_record["appetid"],
-                      "sliceid": sliceid_from_regxml_path(regxml_file),
-                      "hiveid": local_hiveid_counter,
+                      "osetid": frxp_osetid,
+                      "appetid": frxp_appetid,
+                      "sliceid": frxp_sliceid,
+                      "hiveid": hiveid_record["hiveid"],
                       "cellpath": cell.full_path(),
                       "cellaction": "property updated",
                       "parentmtimebefore": time_string_from_cell(ocell.parent_key),
@@ -282,9 +283,10 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create a SQLite database of file system and registry differences as found by RegXML Extractor.  Meant to be run on a single sequence of disk images processed by RegXML Extractor.")
-    parser.add_argument("representative_slice_tarball", help="Absolute path to the last tarball of this sequence.")
-    parser.add_argument("regxml_extractor_sequences", help="File listing absolute paths to RegXML Extractor output directories, in sequence order.")
+    parser.add_argument("dwf_all_results_root", help="Absolute path to the Diskprints workflow results root.")
+    parser.add_argument("graph_id", help="Label of the named sequence.")
     parser.add_argument("--with-script-path", help="Directory where installed rx_make_database.py, idifference.py and rdifference.py reside.")
+    parser.add_argument("--config", help="Configuration file", default="differ.cfg")
     parser.add_argument("-d", "--debug", action="store_true", help="Enable debug printing.")
     args = parser.parse_args()
 

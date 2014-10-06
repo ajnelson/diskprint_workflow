@@ -4,7 +4,7 @@
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 top_srcdir="${script_dir}/.."
 
-source "${script_dir}/_check.sh"
+source "${top_srcdir}/src/_pick_pythons.sh"
 
 set -e
 set -x

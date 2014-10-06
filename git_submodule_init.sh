@@ -1,13 +1,19 @@
 #!/bin/bash
 
-#This script is a pseudo-git-submodule tracker.  Will be replaced on transitioning to Git.
+git submodule init deps/python-cybox
+git submodule sync deps/python-cybox
+git submodule update deps/python-cybox
+
+#The rest of this script is a pseudo-git-submodule tracker.  Will be replaced on transitioning to Git.
 
 AFFLIB_REPO=https://github.com/simsong/AFFLIBv3.git
 AFFLIB_COMMIT=b0a36e392c26e4d9e95a85a41071d794d4b9ee73
-DFXML_REPO=https://github.com/ajnelson/dfxml.git
-DFXML_COMMIT=0aae117442333ae8ff0f4ca1003481bfcb29a970
+DFXMLSCHEMA_REPO=https://github.com/ajnelson/dfxml_schema.git
+DFXMLSCHEMA_COMMIT=532f994ef652df030cd3f7b96b0870d3fffaec68
+DFXML_REPO=https://github.com/simsong/dfxml.git
+DFXML_COMMIT=eb79c78966d14024d0b6b617f16b703c93b5f72a
 RE_REPO=https://github.com/ajnelson/regxml_extractor.git
-RE_COMMIT=03c59cac7030bb9ff20356493222440189b35348
+RE_COMMIT=c466fc7fc0fe1865bbdac4c2cffdf977e5f348d3
 
 #Fetch Git repositories with git-submodule...only, in SVN.
 
@@ -18,6 +24,13 @@ if [ ! -d deps/regxml_extractor.git ]; then
   pushd regxml_extractor.git >/dev/null
   git checkout $RE_COMMIT
   popd >/dev/null
+  popd >/dev/null
+fi
+
+if [ ! -d deps/dfxml_schema.git ]; then
+  echo "Note: Cloning DFXML Schema Git repository." >&2
+  pushd deps/ >/dev/null
+  git clone $DFXMLSCHEMA_REPO dfxml_schema.git
   popd >/dev/null
 fi
 

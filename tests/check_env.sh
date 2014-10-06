@@ -10,7 +10,7 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 top_srcdir="${script_dir}/.."
 
 source "${top_srcdir}/_env_extra.sh"
-source "${script_dir}/_check.sh"
+source "${top_srcdir}/src/_pick_pythons.sh"
 
 #Ensure we have Python 2 and 3 handy
 test -x $PYTHON2
@@ -28,6 +28,11 @@ pushd "${top_srcdir}/src" >/dev/null
 $PYTHON3 -c 'import dfxml'
 $PYTHON2 -c 'import differ_library'
 $PYTHON3 -c 'import differ_library'
+popd >/dev/null
+
+#Check that the DFXML regression tests pass
+pushd "${top_srcdir}/deps/dfxml.git/python" >/dev/null
+make check
 popd >/dev/null
 
 #Ensure libewf is installed

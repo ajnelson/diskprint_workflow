@@ -1,9 +1,9 @@
 #!/bin/bash
 #Assumed to be run after RegXML Extractor successfully completes.
-#Assumes a few directories are present:
-# * $outdir/../do_difference_workflow.sh
-# * All the output directories for RegXML Extractor listed in $imageoutroot/make_sequence_list.sh/sequence_tarballs.sh
-# * $top_src_dir/local/share/regxml_extractor/python - the installed directory of RegXML Extractor
+#Assumes this directory is present:
+# * $top_src_dir/local/share/regxml_extractor/python - the installed directory of RegXML Extractor's Python code
+#Assumes the environment contains:
+# * dwf_sequence_id
 
 debug=1
 
@@ -11,9 +11,17 @@ debug=1
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 top_src_dir="${script_dir}/.."
 
-final_tarball_path="$1"
+#Define Pythons
+source "${script_dir}/_pick_pythons.sh"
+
+#(This script doesn't use the tarball path in $1.  That argument is just there for interface consistency with all the other workflow scripts.)
+
 outdir="$2"
-sequence_res="${outdir/%make_sequence_deltas.sh/do_difference_workflow.sh}/sequence_res.txt"
+
+if [ -z "$dwf_sequence_id" ]; then
+  echo "$0: Error: \$dwf_sequence_id must be defined to call this program." >&2
+  exit 1
+fi
 
 if [ $debug -eq 0 ]; then
   maybe_debug=
@@ -22,7 +30,7 @@ else
 fi
 
 pushd "${outdir}" >/dev/null
-"${script_dir}/make_sequence_deltas.py" $maybe_debug --with-script-path="${top_src_dir}/local/share/regxml_extractor/python" "${final_tarball_path}" "${sequence_res}"
+"$PYTHON3" "${script_dir}/make_sequence_deltas.py" $maybe_debug --config="${script_dir}/differ.cfg" --with-script-path="${top_src_dir}/local/share/regxml_extractor/python" "$dwf_all_results_root" "$dwf_sequence_id"
 status=$?
 popd >/dev/null
 exit $status
