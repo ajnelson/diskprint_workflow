@@ -429,7 +429,7 @@ logged_success() {
 #AJN TODO 20140826
 count_script_errors() {
   #Parameters:
-  # 1) node|edge|graph
+  # 1) node|edge|sequence
   # 2) Target script, for checking exit statuses
   error_tally=0
   analysis_type="$1"
@@ -457,11 +457,11 @@ count_script_errors() {
       fi
       node_id0="$node_id1"
     done <"$dwf_node_sequence_file"
-  elif [ "$analysis_type" == "graph" ]; then
+  elif [ "$analysis_type" == "sequence" ]; then
     statlog="${dwf_all_results_root}/by_sequence/${dwf_sequence_id}/${target_script}.status.log"
     _tally
   else
-    echo "ERROR:$0:count_script_errors called with bad first argument (should be 'node', 'edge', or 'graph'), received: ${analysis_type}." >&2
+    echo "ERROR:$0:count_script_errors called with bad first argument (should be 'node', 'edge', or 'sequence'), received: ${analysis_type}." >&2
     exit 1
   fi
   echo $error_tally
@@ -471,8 +471,8 @@ my_inorder_parallel="parallel --keep-order -j$num_jobs"
 
 
 #Create the sequence list.
-logandrunscript graph "$dwf_script_dirname/make_sequence_list.sh" "$dwf_sequence_id"
-any_errors=$(count_script_errors graph "make_sequence_list.sh")
+logandrunscript sequence "$dwf_script_dirname/make_sequence_list.sh" "$dwf_sequence_id"
+any_errors=$(count_script_errors sequence "make_sequence_list.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Note: Something went wrong making the sequence list.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   exit 1
@@ -633,8 +633,8 @@ fi
 
 
 #Create the deltas dataset for the whole sequence
-logandrunscript graph "$dwf_script_dirname/make_sequence_deltas.sh" "$dwf_sequence_id"
-any_errors=$(count_script_errors graph "make_sequence_deltas.sh")
+logandrunscript sequence "$dwf_script_dirname/make_sequence_deltas.sh" "$dwf_sequence_id"
+any_errors=$(count_script_errors sequence "make_sequence_deltas.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Error: Something went wrong aggregating the sequence results into SQLite.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   exit 1
@@ -642,8 +642,8 @@ fi
 
 
 #Export the results to Postgres
-logandrunscript graph "$dwf_script_dirname/export_sqlite_to_postgres.sh" "$dwf_sequence_id"
-any_errors=$(count_script_errors graph "export_sqlite_to_postgres.sh")
+logandrunscript sequence "$dwf_script_dirname/export_sqlite_to_postgres.sh" "$dwf_sequence_id"
+any_errors=$(count_script_errors sequence "export_sqlite_to_postgres.sh")
 if [ $any_errors -gt 0 ]; then
   echo "Error: Something went wrong exporting the SQLite to Postgres.  Quitting.  See above error log for notes on what went wrong (grep for 'ERROR: ')." >&2
   echo "Warning: At this point you probably need to delete some records from Postgres.  See the error log for export_sqlite_to_postgres.sh, there are some DELETE statements pre-built." >&2
