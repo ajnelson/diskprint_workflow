@@ -330,9 +330,9 @@ logandrunscript () {
   #This function creates the script's output directory, and several log files alongside the directory: stdout, stderr, and exit status.
   #This function checks for an exit status log, and if it finds one that reports a previous run was successful, it just exits saying work has been successfully done.  NB: If a previous script in the sequence has had its results updated, you should delete all of the output it affects (a very, very broad taint analysis).
   #Function arguments:
-  # $1: Whether this is a node-, edge-, or graph-level analysis (node|edge|graph)
+  # $1: Whether this is a node-, edge-, or sequence-level analysis (node|edge|sequence)
   # $2: Script basename (fscript)
-  # $3: Input ID (node id, end node id of an edge, or graph ID)
+  # $3: Input ID (node id, end node id of an edge, or sequence ID)
 
   analysis_type="$1"
 
@@ -359,6 +359,12 @@ logandrunscript () {
       return 0
     fi
 
+    if [ "x${node_id0}" == "x${node_id1}" ]; then
+      #TODO Fix this.
+      echo "WARNING:${script_basename}:logandrunscript:Found edge connecting a node to itself (${node_id0}).  Skipping this call." >&2
+      return 0
+    fi
+
     #Sanity-check increasing order of sliceids
     _appetid0=$(node_id_to_osetid $node_id0)
     _appetid1=$(node_id_to_osetid $node_id1)
@@ -372,7 +378,7 @@ logandrunscript () {
     fi
 
     foutdir="${dwf_all_results_root}/by_edge/${node_id0}/${node_id1}/${fscript_basename}"
-  elif [ "$analysis_type" == "graph" ]; then
+  elif [ "$analysis_type" == "sequence" ]; then
     foutdir="${dwf_all_results_root}/by_sequence/${dwf_sequence_id}/${fscript_basename}"
   else
     "ERROR:${script_basename}:logandrunscript called without a proper analysis type argument." >&2
@@ -426,7 +432,6 @@ logged_success() {
   return 1
 }
 
-#AJN TODO 20140826
 count_script_errors() {
   #Parameters:
   # 1) node|edge|sequence
@@ -607,7 +612,6 @@ fi
 
 
 #Create RE output directories after all E01 output's successfully done.
-#(Creating per-image RE immediately after creating the E01 (and similarly with Fiwalk) means basically trying to integrate Make again: Suddenly, there's a piecemeal, per-tarball dependency graph that has to be defined. A Bash array could probably do it, but recovering from failure becomes tedious right-quick.)
 $my_inorder_parallel \
   echo "Note: Starting RegXML Extractor processing for \"{}\"." \>\&2 \; \
   logandrunscript node "$dwf_script_dirname/invoke_regxml_extractor.sh" {} \; \
