@@ -7,13 +7,13 @@ git submodule update deps/python-cybox
 #The rest of this script is a pseudo-git-submodule tracker.  Will be replaced on transitioning to Git.
 
 AFFLIB_REPO=https://github.com/simsong/AFFLIBv3.git
-AFFLIB_COMMIT=b0a36e392c26e4d9e95a85a41071d794d4b9ee73
+AFFLIB_COMMIT=82511e26b8920334c86a970ea19de3cdc84b4e5e
 DFXMLSCHEMA_REPO=https://github.com/ajnelson/dfxml_schema.git
 DFXMLSCHEMA_COMMIT=532f994ef652df030cd3f7b96b0870d3fffaec68
 DFXML_REPO=https://github.com/simsong/dfxml.git
 DFXML_COMMIT=eb79c78966d14024d0b6b617f16b703c93b5f72a
 RE_REPO=https://github.com/ajnelson/regxml_extractor.git
-RE_COMMIT=c466fc7fc0fe1865bbdac4c2cffdf977e5f348d3
+RE_COMMIT=f724d85890bb3afa199550054a40dfbd505aa6b8
 
 #Fetch Git repositories with git-submodule...only, in SVN.
 
