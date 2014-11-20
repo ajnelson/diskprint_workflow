@@ -8,11 +8,12 @@ http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-1
 Table 2
 """
 
-__version__ = "0.2.5"
+__version__ = "0.3.0"
 
 import os
 import logging
 import binascii
+import hashlib
 
 _logger = logging.getLogger(os.path.basename(__file__))
 
@@ -20,12 +21,22 @@ import Objects
 
 def main():
     global args
+
+    checker_do = Objects.DFXMLObject()
+    _appender = checker_do
+
     with open(args.output_file, "w", newline='\r\n') as output_fh:
         #Print header
         print('"SHA-1","MD5","CRC32","FileName","FileSize","ProductCode","OpSystemCode","SpecialCode"', file=output_fh)
 
         for (event, obj) in Objects.iterparse(args.input_dfxml):
-            if not isinstance(obj, Objects.FileObject):
+            if isinstance(obj, Objects.VolumeObject):
+                if event == "start":
+                    checker_do.append(obj)
+                    _appender = obj
+                else:
+                    _appender = checker_do
+            elif not isinstance(obj, Objects.FileObject):
                 continue
 
             #File must be new or modified.
@@ -45,6 +56,9 @@ def main():
                 _logger.info("Skipping a file stored with NTFS compression (id=%r)." % obj.id)
                 continue
 
+            checker_fo = Objects.FileObject()
+            any_error = None
+
             _sha1 = ('"' + (obj.sha1 or "") + '"').upper()
             _md5 =  ('"' + (obj.md5  or "") + '"').upper()
             _filename = '"' + os.path.basename(obj.filename or "") + '"'
@@ -54,10 +68,29 @@ def main():
             if obj.filesize > 0 and obj.data_brs:
                 crc = 0
                 try:
+                    #Accumulate the file data to test checksums
+                    checker_md5 = hashlib.md5()
+                    checker_sha1 = hashlib.sha1()
+
                     for byte_buffer in obj.data_brs.iter_contents(args.input_disk_image):
                         crc = binascii.crc32(byte_buffer, crc)
+                        checker_md5.update(byte_buffer)
+                        checker_sha1.update(byte_buffer)
                     #This line c/o: https://docs.python.org/3.3/library/binascii.html#binascii.crc32
                     _crc32 = '"{:#010x}"'.format(crc & 0xffffffff)[3:].upper()
+
+                    checker_md5_digest = checker_md5.hexdigest() 
+                    if (not obj.md5 is None) and checker_md5_digest != obj.md5:
+                        checker_fo.md5 = checker_md5_digest
+                        checker_fo.diffs.add("md5")
+                        any_error = True
+                    checker_sha1_digest = checker_sha1.hexdigest() 
+                    if (not obj.sha1 is None) and checker_sha1_digest != obj.sha1:
+                        checker_fo.sha1 = checker_sha1_digest
+                        checker_fo.diffs.add("sha1")
+                        any_error = True
+                    if any_error:
+                        _appender.append(checker_fo)
                 except:
                     _logger.info("Input DFXML file: %r." % os.path.abspath(args.input_dfxml))
                     _logger.info("File ID: %r." % obj.id)
@@ -66,6 +99,10 @@ def main():
 
             print(",".join([_sha1, _md5, _crc32, _filename, _filesize, "", "", '""']), file=output_fh)
 
+    if args.dfxml_read_error_manifest:
+        with open(args.dfxml_read_error_manifest, "w") as fh:
+            checker_do.print_dfxml(fh)
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
@@ -73,6 +110,7 @@ if __name__ == "__main__":
     parser.add_argument("input_disk_image")
     parser.add_argument("output_file")
     parser.add_argument("-d", "--debug", help="Enable debug printing", action="store_true")
+    parser.add_argument("--dfxml-read-error-manifest", help="Optional DFXML output for read errors (determined by mismatched checksums).")
     args = parser.parse_args()
 
     logging.basicConfig(

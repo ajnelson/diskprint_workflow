@@ -11,5 +11,6 @@ dwf_output_dir="${2}"
 
 input_disk_image="${dwf_all_results_root}/by_node/${node_id1}/link_disk.sh/disk0.E01"
 input_dfxml="${dwf_output_dir}/../make_differential_dfxml_prior.sh/deltas.dfxml"
+err_dfxml="${dwf_output_dir}/errors.dfxml"
 
-"$PYTHON3" "${script_dir}/make_rds_format.py" "$input_dfxml" "$input_disk_image" "${dwf_output_dir}/NSRLFile.txt"
+"$PYTHON3" "${script_dir}/make_rds_format.py" --dfxml-read-error-manifest "$err_dfxml" "$input_dfxml" "$input_disk_image" "${dwf_output_dir}/NSRLFile.txt"
