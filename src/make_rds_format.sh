@@ -18,7 +18,9 @@ err_dfxml_format="${dwf_output_dir}/errors.dfxml"
 rc=$?
 
 #Pretty-print the error DFXML.
-xmllint --format "$err_dfxml_noformat" > "$err_dfxml_format"
-rm "$err_dfxml_noformat"
+if [ -r "$err_dfxml_noformat" ]; then
+  xmllint --format "$err_dfxml_noformat" > "$err_dfxml_format"
+  rm "$err_dfxml_noformat"
+fi
 
 exit $rc
