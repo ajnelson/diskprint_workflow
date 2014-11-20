@@ -89,12 +89,12 @@ def main():
                     _crc32 = '"{:#010x}"'.format(crc & 0xffffffff)[3:].upper()
 
                     checker_md5_digest = checker_md5.hexdigest().upper()
-                    if (not _md5 in [None, ""]) and checker_md5_digest != _md5:
+                    if (not _md5 in [None, "", '""']) and checker_md5_digest != _md5[1:-1]:
                         checker_fo.md5 = checker_md5_digest
                         checker_fo.diffs.add("md5")
                         any_error = True
                     checker_sha1_digest = checker_sha1.hexdigest().upper()
-                    if (not _sha1 in [None, ""]) and checker_sha1_digest != _sha1:
+                    if (not _sha1 in [None, "", '""']) and checker_sha1_digest != _sha1[1:-1]:
                         checker_fo.sha1 = checker_sha1_digest
                         checker_fo.diffs.add("sha1")
                         any_error = True
