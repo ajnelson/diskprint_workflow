@@ -8,7 +8,7 @@ http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-1
 Table 2
 """
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 import os
 import logging
@@ -51,7 +51,16 @@ def main():
             if not obj.alloc:
                 continue
 
-            #To get the CRC32, the file must not be compressed.  (The .compressed property currently denotes NTFS compression.  I haven't checked to see if this is extractable.  So for now, skip compressed files.)
+            #As this is a hash reference set, skip if Fiwalk had produced no hash.
+            if obj.sha1 in [None, ""]:
+                continue
+
+            #Skip 0-sized NTFS $Secure system file, which is hashed by some tools (including Fiwalk) with a hard-coded rule to get its Alternate Data Stream.
+            #(Accessing the same data is waiting on an update to the DFXML language.)
+            if obj.filename == "$Secure" and obj.filesize == 0:
+                continue
+
+            #Currently, to get the CRC32, the file must not be compressed.  (The .compressed property currently denotes NTFS compression.  I haven't checked to see if this is extractable.  So for now, skip compressed files.)
             if obj.compressed:
                 _logger.info("Skipping a file stored with NTFS compression (id=%r)." % obj.id)
                 continue
@@ -79,17 +88,18 @@ def main():
                     #This line c/o: https://docs.python.org/3.3/library/binascii.html#binascii.crc32
                     _crc32 = '"{:#010x}"'.format(crc & 0xffffffff)[3:].upper()
 
-                    checker_md5_digest = checker_md5.hexdigest() 
-                    if (not obj.md5 is None) and checker_md5_digest != obj.md5:
+                    checker_md5_digest = checker_md5.hexdigest().upper()
+                    if (not _md5 in [None, ""]) and checker_md5_digest != _md5:
                         checker_fo.md5 = checker_md5_digest
                         checker_fo.diffs.add("md5")
                         any_error = True
-                    checker_sha1_digest = checker_sha1.hexdigest() 
-                    if (not obj.sha1 is None) and checker_sha1_digest != obj.sha1:
+                    checker_sha1_digest = checker_sha1.hexdigest().upper()
+                    if (not _sha1 in [None, ""]) and checker_sha1_digest != _sha1:
                         checker_fo.sha1 = checker_sha1_digest
                         checker_fo.diffs.add("sha1")
                         any_error = True
                     if any_error:
+                        _logger.error("Checksum mismatch between what Fiwalk computed and what this script could extract (id=%r)." % obj.id)
                         _appender.append(checker_fo)
                 except:
                     _logger.info("Input DFXML file: %r." % os.path.abspath(args.input_dfxml))
