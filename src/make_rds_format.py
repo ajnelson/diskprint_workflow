@@ -8,7 +8,7 @@ http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-1
 Table 2
 """
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 import os
 import logging
@@ -100,6 +100,7 @@ def main():
                         any_error = True
                     if any_error:
                         _logger.error("Checksum mismatch between what Fiwalk computed and what this script could extract (id=%r)." % obj.id)
+                        checker_fo.original_fileobject = obj
                         _appender.append(checker_fo)
                 except:
                     _logger.info("Input DFXML file: %r." % os.path.abspath(args.input_dfxml))
