@@ -8,7 +8,7 @@ http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-1
 Table 2
 """
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 
 import os
 import logging
@@ -76,6 +76,7 @@ def main():
             _crc32 = '""'
             if obj.filesize > 0 and obj.data_brs:
                 crc = 0
+                read_bytes = 0
                 try:
                     #Accumulate the file data to test checksums
                     checker_md5 = hashlib.md5()
@@ -85,6 +86,8 @@ def main():
                         crc = binascii.crc32(byte_buffer, crc)
                         checker_md5.update(byte_buffer)
                         checker_sha1.update(byte_buffer)
+                        read_bytes += len(byte_buffer)
+
                     #This line c/o: https://docs.python.org/3.3/library/binascii.html#binascii.crc32
                     _crc32 = '"{:#010x}"'.format(crc & 0xffffffff)[3:].upper()
 
@@ -98,8 +101,12 @@ def main():
                         checker_fo.sha1 = checker_sha1_digest
                         checker_fo.diffs.add("sha1")
                         any_error = True
+                    checker_fo.filesize = read_bytes #Show read filesize regardless of a mismatch
+                    if obj.filesize != read_bytes:
+                        checker_fo.diffs.add("filesize")
+                        any_error = True
                     if any_error:
-                        _logger.error("Checksum mismatch between what Fiwalk computed and what this script could extract (id=%r)." % obj.id)
+                        _logger.error("Content mismatch between what Fiwalk computed and what this script could extract (id=%r)." % obj.id)
                         checker_fo.original_fileobject = obj
                         _appender.append(checker_fo)
                 except:
