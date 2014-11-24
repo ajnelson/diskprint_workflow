@@ -8,7 +8,7 @@ http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-1
 Table 2
 """
 
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 
 import os
 import logging
@@ -30,13 +30,16 @@ def main():
         print('"SHA-1","MD5","CRC32","FileName","FileSize","ProductCode","OpSystemCode","SpecialCode"', file=output_fh)
 
         for (event, obj) in Objects.iterparse(args.input_dfxml):
+            #Catch volumes for organizing file errors.
             if isinstance(obj, Objects.VolumeObject):
                 if event == "start":
                     checker_do.append(obj)
                     _appender = obj
                 else:
                     _appender = checker_do
-            elif not isinstance(obj, Objects.FileObject):
+
+            #The rest of this loop is for files.
+            if not isinstance(obj, Objects.FileObject):
                 continue
 
             #File must be new or modified.
