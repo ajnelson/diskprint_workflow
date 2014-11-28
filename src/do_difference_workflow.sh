@@ -579,6 +579,13 @@ $my_inorder_parallel \
   :::: "$dwf_node_sequence_file"
 any_errors=$(count_script_errors edge "make_new_file_sector_hashes.sh")
 
+#Create padded sector hashes of new files
+$my_inorder_parallel \
+  echo "Note: Starting padded new-file sector hashing \"{}\"." \>\&2 \; \
+  logandrunscript edge "$dwf_script_dirname/make_new_file_sector_hashes_padded.sh" {} \; \
+  :::: "$dwf_node_sequence_file"
+any_errors=$(count_script_errors edge "make_new_file_sector_hashes_padded.sh")
+
 
 #Tolerate errors with sector hashing for now.
 
