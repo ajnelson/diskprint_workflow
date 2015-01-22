@@ -8,7 +8,7 @@ http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-1
 Table 2
 """
 
-__version__ = "0.3.5"
+__version__ = "0.3.6"
 
 import os
 import logging
@@ -96,7 +96,7 @@ def main():
                         read_bytes += len(byte_buffer)
 
                     #This line c/o: https://docs.python.org/3.3/library/binascii.html#binascii.crc32
-                    _crc32 = '"{:#010x}"'.format(crc & 0xffffffff)[3:].upper()
+                    _crc32 = '"' + '{:#010x}'.format(crc & 0xffffffff)[2:].upper() + '"'
 
                     checker_md5_digest = checker_md5.hexdigest().upper()
                     if (not _md5 in [None, "", '""']) and checker_md5_digest != _md5[1:-1]:
