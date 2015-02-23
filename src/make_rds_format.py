@@ -8,7 +8,7 @@ http://www.nsrl.nist.gov/Documents/Data-Formats-of-the-NSRL-Reference-Data-Set-1
 Table 2
 """
 
-__version__ = "0.3.6"
+__version__ = "0.3.7"
 
 import os
 import logging
@@ -61,6 +61,10 @@ def main():
             #Skip 0-sized NTFS $Secure system file, which is hashed by some tools (including Fiwalk) with a hard-coded rule to get its Alternate Data Stream.
             #(Accessing the same data is waiting on an update to the DFXML language.)
             if obj.filename == "$Secure" and obj.filesize == 0:
+                continue
+
+            #The RDS format does not allow for blank file names.
+            if obj.filename is None or obj.filename == "":
                 continue
 
             #Currently, to get the CRC32, the file must not be compressed.  (The .compressed property currently denotes NTFS compression.  I haven't checked to see if this is extractable.  So for now, skip compressed files.)
