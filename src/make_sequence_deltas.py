@@ -6,7 +6,7 @@ make_sequence_deltas.py: Aggregate differences in ouput of Fiwalk and RegXML Ext
 For usage instructions, see the argument parser description below, or run this script without arguments.
 """
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 
 import sys
 import os
@@ -74,6 +74,7 @@ def main():
           appetid TEXT,
           sliceid NUMBER,
           hiveid NUMBER,
+          basename TEXT,
           cellpath TEXT,
           cellaction NUMBER,
           parentmtimebefore TEXT,
@@ -204,6 +205,7 @@ def main():
                       "appetid": frxp_appetid,
                       "sliceid": frxp_sliceid,
                       "hiveid": hiveid_record["hiveid"],
+                      "basename": cell.name(),
                       "cellpath": cell.full_path(),
                       "cellaction": "created",
                       "parentmtimebefore": old_parent_mtime,
@@ -233,6 +235,7 @@ def main():
                       "appetid": frxp_appetid,
                       "sliceid": frxp_sliceid,
                       "hiveid": hiveid_record["hiveid"],
+                      "basename": ocell.name(),
                       "cellpath": ocell.full_path(),
                       "cellaction": "removed",
                       "parentmtimebefore": time_string_from_cell(ocell.parent_key),
@@ -262,6 +265,7 @@ def main():
                       "appetid": frxp_appetid,
                       "sliceid": frxp_sliceid,
                       "hiveid": hiveid_record["hiveid"],
+                      "basename": cell.name(),
                       "cellpath": cell.full_path(),
                       "cellaction": "property updated",
                       "parentmtimebefore": time_string_from_cell(ocell.parent_key),
